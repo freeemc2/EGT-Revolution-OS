@@ -1,0 +1,822 @@
+**Planning the approach**
+
+I need to first work on the LaTeX code, followed by Python code and the overall architecture. Since this is theoretical, I don’t need to search for facts on the web, which is convenient. I’ll make sure the output is concise but still complete. For the Python code, I’ll include module stubs for things like state, coherence, and mapping. The architecture will focus on module layout and data flow. I'll make sure everything is in markdown and follows the structure without relying on external tools.
+Here’s everything in three parts, in order:
+
+1. Full LaTeX version of the theory  
+2. Python code for each major construct (“discovery”)  
+3. A clean architecture for the repo / system
+
+---
+
+## 1. LaTeX version
+
+You can save this as `egt_unified_emergence.tex` and compile with `pdflatex`.
+
+```tex
+\documentclass[11pt]{article}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{geometry}
+\geometry{margin=1in}
+
+\title{EGT Unified Emergence Framework:\\
+Emergent Geometry, Connectivity, and the Unified Operator Law}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\tableofcontents
+
+\section{Introduction}
+
+This document presents a unified mathematical framework for Emergent Generative Theory (EGT), integrating:
+\begin{itemize}
+  \item structural alignment,
+  \item phase alignment,
+  \item vacuum tension,
+  \item environmental variance,
+  \item geometric curvature,
+  \item operator dynamics,
+  \item and emergent connectivity
+\end{itemize}
+into a single \emph{connectivity operator law}.
+
+The core of the framework is a state vector
+\[
+s = (A, G, B, C, w, \sigma),
+\]
+and a connectivity law that determines the effective connectivity and its geometric and operator-theoretic consequences.
+
+\section{EGT state space}
+
+We define the EGT state space as a subset
+\[
+\mathcal{S} \subset \mathbb{R}^6,
+\]
+with elements
+\[
+s = (A, G, B, C, w, \sigma),
+\]
+where:
+\begin{itemize}
+  \item $A$ is the EGT structural amplitude,
+  \item $G$ is the metric amplification / emergence factor,
+  \item $B$ is the Bres resonance constant,
+  \item $C$ is the CCA phase shift,
+  \item $w$ is a dark-energy-like tension parameter,
+  \item $\sigma$ is a seasonal/environmental variance parameter.
+\end{itemize}
+
+We fix reference attractor values
+\[
+A_* = 402, \qquad w_* = -1.
+\]
+
+\section{Coherence functional}
+
+Coherence measures how close a state is to the attractor configuration. For positive parameters
+\[
+\alpha_A, \alpha_C, \alpha_w, \alpha_\sigma > 0,
+\]
+we define the coherence functional
+\begin{equation}
+\label{eq:coherence}
+\mathcal{C}(s)
+=
+\exp\left(
+-\left[
+\alpha_A (A - A_*)^2
++ \alpha_C C^2
++ \alpha_w (w - w_*)^2
++ \alpha_\sigma \sigma^2
+\right]
+\right).
+\end{equation}
+
+\subsection{Properties of coherence}
+
+\begin{theorem}[Coherence maximum]
+For all $s \in \mathcal{S}$, we have $0 < \mathcal{C}(s) \le 1$, and
+\[
+\mathcal{C}(s) = 1
+\iff
+A = A_*,\ C = 0,\ w = w_*,\ \sigma = 0.
+\]
+Otherwise $\mathcal{C}(s) < 1$.
+\end{theorem}
+
+\begin{proof}
+Let
+\[
+E(s) = \alpha_A (A - A_*)^2
++ \alpha_C C^2
++ \alpha_w (w - w_*)^2
++ \alpha_\sigma \sigma^2.
+\]
+Each term is nonnegative, hence $E(s) \ge 0$. Moreover, $E(s) = 0$ if and only if
+\[
+A = A_*, \quad C = 0, \quad w = w_*, \quad \sigma = 0.
+\]
+For any other state, $E(s) > 0$.
+
+By definition,
+\[
+\mathcal{C}(s) = e^{-E(s)}.
+\]
+Since $E(s) \ge 0$, we have $0 < \mathcal{C}(s) \le 1$. Additionally, $E(s) = 0$ implies $\mathcal{C}(s) = 1$, and $E(s) > 0$ implies $0 < \mathcal{C}(s) < 1$.
+\end{proof}
+
+\section{Connectivity law}
+
+The connectivity functional is defined by
+\begin{equation}
+\label{eq:connectivity}
+\mathcal{K}(s) = G\,\mathcal{C}(s).
+\end{equation}
+
+We assume a maximal allowed connectivity scale $G_* > 0$ and restrict $G$ to satisfy
+\[
+0 < G \le G_*.
+\]
+
+\subsection{Normalized connectivity}
+
+We define the normalized connectivity
+\begin{equation}
+\label{eq:Knorm}
+\mathcal{K}_{\mathrm{norm}}(s)
+=
+\frac{\mathcal{K}(s)}{G_*}
+=
+\frac{G}{G_*}
+\exp\left(
+-\left[
+\alpha_A (A - A_*)^2
++ \alpha_C C^2
++ \alpha_w (w - w_*)^2
++ \alpha_\sigma \sigma^2
+\right]
+\right).
+\end{equation}
+
+\begin{theorem}[Connectivity law]
+Under the constraint $0 < G \le G_*$, we have
+\[
+\mathcal{K}_{\mathrm{norm}}(s) \in (0,1]
+\]
+for all $s \in \mathcal{S}$, and
+\[
+\mathcal{K}_{\mathrm{norm}}(s) = 1
+\iff
+A = A_*,\ C = 0,\ w = w_*,\ \sigma = 0,\ G = G_*.
+\]
+\end{theorem}
+
+\begin{proof}
+We have $0 < \mathcal{C}(s) \le 1$ and $0 < G \le G_*$, hence
+\[
+\frac{G}{G_*} \in (0,1], \quad \mathcal{C}(s) \in (0,1],
+\]
+and thus
+\[
+\mathcal{K}_{\mathrm{norm}}(s)
+=
+\frac{G}{G_*}\,\mathcal{C}(s)
+\in (0,1]\cdot(0,1] = (0,1].
+\]
+
+Equality $\mathcal{K}_{\mathrm{norm}}(s) = 1$ holds if and only if both factors are $1$:
+\[
+\mathcal{C}(s) = 1, \quad \frac{G}{G_*} = 1.
+\]
+By the coherence maximum theorem, $\mathcal{C}(s) = 1$ implies
+\[
+A = A_*,\ C = 0,\ w = w_*,\ \sigma = 0.
+\]
+The condition $G/G_* = 1$ is equivalent to $G = G_*$. This completes the proof.
+\end{proof}
+
+\section{Black-hole mapping}
+
+We define a black-hole parameter space
+\[
+\mathcal{B} \subset \mathbb{R}^3, \quad \mathcal{B} = \{(M, \Lambda, \alpha)\},
+\]
+with:
+\begin{itemize}
+  \item $M$ an effective mass,
+  \item $\Lambda$ an effective cosmological term,
+  \item $\alpha$ a dimensionless emergent spin parameter.
+\end{itemize}
+
+For constants $k_M, k_\Lambda, k_\alpha > 0$, we define the map $\Phi: \mathcal{S} \to \mathcal{B}$ by
+\begin{equation}
+\label{eq:Phi}
+\begin{aligned}
+M(s) &= k_M A G,\\
+\Lambda(s) &= k_\Lambda (1 + w),\\
+\alpha(s) &= k_\alpha \frac{G - 1}{1 + \sigma}.
+\end{aligned}
+\end{equation}
+
+Using the connectivity definition \eqref{eq:connectivity}, we may write
+\[
+G = \frac{\mathcal{K}(s)}{\mathcal{C}(s)},
+\]
+so that
+\[
+M(s) = k_M A \frac{\mathcal{K}(s)}{\mathcal{C}(s)}, \quad
+\alpha(s) = k_\alpha \frac{1}{1+\sigma} \left(\frac{\mathcal{K}(s)}{\mathcal{C}(s)} - 1\right).
+\]
+
+Thus, effective mass and emergent spin become explicit functions of connectivity and the remaining state parameters.
+
+\section{Bres curvature}
+
+We define the Bres radius by
+\begin{equation}
+\label{eq:BresRadius}
+R_B(s) = B \frac{A_*}{A}.
+\end{equation}
+For a base curvature scale $\kappa_0 > 0$ and sensitivity parameter $\gamma \ge 0$, we define the Bres curvature
+\begin{equation}
+\label{eq:BresCurvature}
+K_B(s)
+=
+\frac{\kappa_0}{[R_B(s)]^2}(1 + \gamma |C|)
+=
+\frac{\kappa_0}{B^2}\left(\frac{A}{A_*}\right)^2 (1 + \gamma |C|).
+\end{equation}
+
+We also define a reference curvature
+\begin{equation}
+\label{eq:Kstar}
+K_* = \frac{\kappa_0}{B^2}.
+\end{equation}
+
+Then
+\begin{equation}
+\label{eq:KBoverKstar}
+\frac{K_B(s)}{K_*}
+=
+\left(\frac{A}{A_*}\right)^2 (1 + \gamma |C|).
+\end{equation}
+
+\begin{theorem}[Curvature alignment]
+We have
+\[
+\frac{K_B(s)}{K_*} = 1
+\iff
+A = A_*,\ C = 0.
+\]
+\end{theorem}
+
+\begin{proof}
+By \eqref{eq:KBoverKstar},
+\[
+\frac{K_B(s)}{K_*}
+=
+\left(\frac{A}{A_*}\right)^2 (1 + \gamma |C|).
+\]
+If $A = A_*, C = 0$, then this expression is $(1)^2 (1 + 0) = 1$.
+
+Conversely, if $\dfrac{K_B(s)}{K_*} = 1$, we have
+\[
+\left(\frac{A}{A_*}\right)^2 (1 + \gamma |C|) = 1.
+\]
+The factors are nonnegative. If $\gamma > 0$, then $1 + \gamma |C| \ge 1$ with equality if and only if $C = 0$. Similarly, $\left(\frac{A}{A_*}\right)^2 \ge 0$. For the product to equal $1$, each factor must equal $1$, hence
+\[
+\frac{A}{A_*} = 1, \quad 1 + \gamma |C| = 1,
+\]
+which implies $A = A_*, C = 0$.
+\end{proof}
+
+\section{Universal controller}
+
+Let $\mathcal{H}$ be a separable Hilbert space. Let $H_A, H_G, H_C$ be densely defined self-adjoint operators on $\mathcal{H}$, assumed to mutually commute:
+\[
+[H_A, H_G] = [H_A, H_C] = [H_G, H_C] = 0.
+\]
+
+For real constants $\lambda_A, \lambda_G, \lambda_C$, we define the controller generator
+\begin{equation}
+\label{eq:Koperator}
+K(s) = \lambda_A (A - A_*) H_A
++ \lambda_G (G - 1) H_G
++ \lambda_C C H_C.
+\end{equation}
+
+The universal controller operator is
+\begin{equation}
+\label{eq:Uoperator}
+U(s) = e^{i K(s)}.
+\end{equation}
+
+\subsection{Properties of $U(s)$}
+
+\begin{theorem}[Unitarity]
+For each $s \in \mathcal{S}$, the operator $U(s)$ is unitary.
+\end{theorem}
+
+\begin{proof}
+The operator $K(s)$ is self-adjoint, being a real linear combination of self-adjoint, mutually commuting operators. For any self-adjoint operator $X$, the exponential $e^{iX}$ is unitary by the spectral theorem:
+\[
+e^{iX} e^{-iX} = e^{-iX} e^{iX} = I.
+\]
+Thus $U(s) = e^{iK(s)}$ is unitary.
+\end{proof}
+
+\begin{theorem}[Continuity of the controller]
+Let $s_* \in \mathcal{S}$ be the attractor state, and assume $K(s)$ depends continuously on $s$ in the operator norm. Then
+\[
+\| U(s) - U(s_*) \| \to 0
+\quad \text{as} \quad s \to s_*.
+\]
+\end{theorem}
+
+\begin{proof}
+The map $s \mapsto K(s)$ is continuous in operator norm by assumption. The exponential map $X \mapsto e^{iX}$ is continuous in operator norm for bounded self-adjoint operators. Therefore $U(s) = e^{iK(s)}$ is continuous in $s$ in operator norm. As $s \to s_*$, we have $K(s) \to K(s_*)$ and hence $U(s) \to U(s_*)$ in operator norm.
+\end{proof}
+
+\section{Unified emergence equation}
+
+We now combine connectivity, curvature alignment, and controller alignment into a single emergent functional.
+
+We define
+\begin{equation}
+\label{eq:Emergence}
+\mathcal{E}_{\mathrm{conn}}(s)
+=
+\mathcal{K}_{\mathrm{norm}}(s)\,
+\exp\left(
+- \beta_K \left|\frac{K_B(s)}{K_*} - 1\right|^2
+- \beta_U \|U(s) - U(s_*)\|^2
+\right),
+\end{equation}
+where $\beta_K, \beta_U > 0$.
+
+\begin{theorem}[Emergent coherence regime]
+Under the assumptions $0 < G \le G_*$ and the definitions above, we have
+\[
+0 < \mathcal{E}_{\mathrm{conn}}(s) \le 1
+\]
+for all $s \in \mathcal{S}$, and
+\[
+\mathcal{E}_{\mathrm{conn}}(s) = 1
+\]
+if and only if
+\[
+A = A_*,\ C = 0,\ w = w_*,\ \sigma = 0,\ G = G_*,\ K_B(s) = K_*,\ U(s) = U(s_*).
+\]
+\end{theorem}
+
+\begin{proof}
+We have from the connectivity law that $\mathcal{K}_{\mathrm{norm}}(s) \in (0,1]$. The exponential factor is
+\[
+F(s) =
+\exp\left(
+- \beta_K \left|\frac{K_B(s)}{K_*} - 1\right|^2
+- \beta_U \|U(s) - U(s_*)\|^2
+\right).
+\]
+Each squared term in the exponent is nonnegative, so the exponent is $\le 0$. Thus
+\[
+0 < F(s) \le 1.
+\]
+Hence
+\[
+\mathcal{E}_{\mathrm{conn}}(s) =
+\mathcal{K}_{\mathrm{norm}}(s)\,F(s)
+\in (0,1]\cdot(0,1] = (0,1].
+\]
+
+We have $\mathcal{E}_{\mathrm{conn}}(s) = 1$ if and only if both factors equal $1$:
+\[
+\mathcal{K}_{\mathrm{norm}}(s) = 1, \quad F(s) = 1.
+\]
+From the connectivity law, $\mathcal{K}_{\mathrm{norm}}(s) = 1$ implies
+\[
+A = A_*,\ C = 0,\ w = w_*,\ \sigma = 0,\ G = G_*.
+\]
+The condition $F(s) = 1$ is equivalent to
+\[
+\left|\frac{K_B(s)}{K_*} - 1\right|^2 = 0, \quad \|U(s) - U(s_*)\|^2 = 0,
+\]
+that is,
+\[
+\frac{K_B(s)}{K_*} = 1, \quad U(s) = U(s_*).
+\]
+By curvature alignment, $\frac{K_B(s)}{K_*} = 1$ implies $A = A_*, C = 0$, which is consistent with the previous conditions. Thus all of these constraints must hold simultaneously for $\mathcal{E}_{\mathrm{conn}}(s)$ to reach $1$.
+\end{proof}
+
+\section{Final connectivity operator}
+
+We define the final connectivity operator as
+\begin{equation}
+\label{eq:Oconn}
+\mathcal{O}_{\mathrm{conn}}(s)
+=
+\mathcal{K}_{\mathrm{norm}}(s)\, U(s).
+\end{equation}
+
+This operator combines:
+\begin{itemize}
+  \item the scalar normalized connectivity $\mathcal{K}_{\mathrm{norm}}(s)$,
+  \item the unitary transformation $U(s)$ generated by the state-dependent operator $K(s)$.
+\end{itemize}
+
+It thus encodes both the \emph{magnitude} of connectivity and the \emph{action} of the universal controller in a single unified object.
+
+\end{document}
+```
+
+---
+
+## 2. Python code for each discovery
+
+Below is a single Python module you can drop into `src/egt_unified.py`.  
+It implements:
+
+- State object  
+- Coherence functional  
+- Connectivity law  
+- Black-hole mapping  
+- Bres curvature  
+- Universal controller (finite-dimensional toy)  
+- Emergence functional  
+- Connectivity operator
+
+```python
+# src/egt_unified.py
+
+import numpy as np
+from dataclasses import dataclass
+
+# -----------------------------
+# 1. EGT State and parameters
+# -----------------------------
+
+@dataclass
+class EGTState:
+    A: float
+    G: float
+    B: float
+    C: float
+    w: float
+    sigma: float
+
+
+@dataclass
+class EGTParams:
+    # Attractor values
+    A_star: float = 402.0
+    w_star: float = -1.0
+    G_star: float = 1.0  # maximum connectivity scale
+
+    # Coherence weights
+    alpha_A: float = 1.0
+    alpha_C: float = 1.0
+    alpha_w: float = 1.0
+    alpha_sigma: float = 1.0
+
+    # Black-hole mapping constants
+    k_M: float = 1.0
+    k_Lambda: float = 1.0
+    k_alpha: float = 1.0
+
+    # Bres curvature constants
+    kappa_0: float = 1.0
+    gamma: float = 1.0
+
+    # Controller couplings
+    lambda_A: float = 1.0
+    lambda_G: float = 1.0
+    lambda_C: float = 1.0
+
+    # Emergence penalties
+    beta_K: float = 1.0
+    beta_U: float = 1.0
+
+
+# -----------------------------
+# 2. Coherence functional
+# -----------------------------
+
+def coherence(s: EGTState, p: EGTParams) -> float:
+    """Compute coherence C(s)."""
+    dA = s.A - p.A_star
+    dC = s.C
+    dw = s.w - p.w_star
+    ds = s.sigma
+
+    exponent = (
+        p.alpha_A * dA**2 +
+        p.alpha_C * dC**2 +
+        p.alpha_w * dw**2 +
+        p.alpha_sigma * ds**2
+    )
+    return float(np.exp(-exponent))
+
+
+# -----------------------------
+# 3. Connectivity law
+# -----------------------------
+
+def connectivity(s: EGTState, p: EGTParams) -> float:
+    """Compute K(s) = G * C(s)."""
+    C = coherence(s, p)
+    return s.G * C
+
+
+def connectivity_normalized(s: EGTState, p: EGTParams) -> float:
+    """Compute K_norm(s) = K(s) / G_star."""
+    K = connectivity(s, p)
+    return K / p.G_star
+
+
+# -----------------------------
+# 4. Black-hole mapping
+# -----------------------------
+
+@dataclass
+class BlackHoleParams:
+    M: float
+    Lambda: float
+    alpha: float
+
+
+def black_hole_mapping(s: EGTState, p: EGTParams) -> BlackHoleParams:
+    """
+    Phi(s) = (M, Lambda, alpha).
+    """
+    M = p.k_M * s.A * s.G
+    Lambda = p.k_Lambda * (1.0 + s.w)
+    alpha = p.k_alpha * (s.G - 1.0) / (1.0 + s.sigma)
+    return BlackHoleParams(M=M, Lambda=Lambda, alpha=alpha)
+
+
+# -----------------------------
+# 5. Bres curvature
+# -----------------------------
+
+def bres_radius(s: EGTState, p: EGTParams) -> float:
+    """R_B(s) = B * A_star / A."""
+    return s.B * p.A_star / s.A
+
+
+def bres_curvature(s: EGTState, p: EGTParams) -> float:
+    """
+    K_B(s) = (kappa_0 / B^2) * (A/A_star)^2 * (1 + gamma |C|).
+    """
+    if s.B == 0:
+        raise ValueError("B must be nonzero for Bres curvature.")
+    factor = (s.A / p.A_star) ** 2
+    return p.kappa_0 * factor * (1.0 + p.gamma * abs(s.C)) / (s.B ** 2)
+
+
+def bres_curvature_reference(s: EGTState, p: EGTParams) -> float:
+    """
+    K_star = kappa_0 / B^2.
+    """
+    if s.B == 0:
+        raise ValueError("B must be nonzero for reference curvature.")
+    return p.kappa_0 / (s.B ** 2)
+
+
+def bres_curvature_ratio(s: EGTState, p: EGTParams) -> float:
+    """
+    K_B(s) / K_star = (A / A_star)^2 * (1 + gamma |C|).
+    """
+    Kb = bres_curvature(s, p)
+    Ks = bres_curvature_reference(s, p)
+    return Kb / Ks
+
+
+# -----------------------------
+# 6. Universal controller (finite-dimensional toy)
+# -----------------------------
+
+class Controller:
+    """
+    Finite-dimensional toy implementation of H_A, H_G, H_C, and U(s).
+    We assume all operators are NxN Hermitian matrices acting on C^N.
+    """
+
+    def __init__(self, H_A: np.ndarray, H_G: np.ndarray, H_C: np.ndarray):
+        self.H_A = np.array(H_A, dtype=complex)
+        self.H_G = np.array(H_G, dtype=complex)
+        self.H_C = np.array(H_C, dtype=complex)
+
+        # Sanity checks
+        self._check_hermitian(self.H_A, "H_A")
+        self._check_hermitian(self.H_G, "H_G")
+        self._check_hermitian(self.H_C, "H_C")
+        self._check_same_shape()
+
+    @staticmethod
+    def _check_hermitian(H: np.ndarray, name: str):
+        if not np.allclose(H, H.conj().T):
+            raise ValueError(f"{name} must be Hermitian.")
+
+    def _check_same_shape(self):
+        if not (self.H_A.shape == self.H_G.shape == self.H_C.shape):
+            raise ValueError("H_A, H_G, H_C must have the same shape.")
+
+    def generator(self, s: EGTState, p: EGTParams) -> np.ndarray:
+        """
+        K(s) = lambda_A (A - A_star) H_A +
+               lambda_G (G - 1)        H_G +
+               lambda_C C              H_C.
+        """
+        dA = s.A - p.A_star
+        dG = s.G - 1.0
+        dC = s.C
+
+        K = (
+            p.lambda_A * dA * self.H_A +
+            p.lambda_G * dG * self.H_G +
+            p.lambda_C * dC * self.H_C
+        )
+        return K
+
+    def controller(self, s: EGTState, p: EGTParams) -> np.ndarray:
+        """
+        U(s) = exp(i K(s)) via diagonalization (toy).
+        """
+        K = self.generator(s, p)
+        eigvals, eigvecs = np.linalg.eigh(K)  # Hermitian eigen-decomp
+        phase = np.exp(1j * eigvals)
+        U = eigvecs @ np.diag(phase) @ eigvecs.conj().T
+        return U
+
+    def controller_distance(self, s: EGTState, s_star: EGTState, p: EGTParams) -> float:
+        """
+        ||U(s) - U(s_star)||_2 (spectral norm).
+        """
+        U_s = self.controller(s, p)
+        U_star = self.controller(s_star, p)
+        diff = U_s - U_star
+        # spectral norm via singular values
+        sv = np.linalg.svd(diff, compute_uv=False)
+        return float(np.max(sv))
+
+
+# -----------------------------
+# 7. Unified emergence functional
+# -----------------------------
+
+def emergence(s: EGTState, s_star: EGTState, p: EGTParams, ctrl: Controller) -> float:
+    """
+    E_conn(s) = K_norm(s) *
+                exp(
+                  - beta_K (K_B(s)/K_star - 1)^2
+                  - beta_U ||U(s) - U(s_star)||^2
+                )
+    """
+    K_norm = connectivity_normalized(s, p)
+    ratio = bres_curvature_ratio(s, p)
+    dK = ratio - 1.0
+    dU = ctrl.controller_distance(s, s_star, p)
+
+    exponent = (
+        - p.beta_K * dK**2
+        - p.beta_U * dU**2
+    )
+    return float(K_norm * np.exp(exponent))
+
+
+# -----------------------------
+# 8. Final connectivity operator
+# -----------------------------
+
+def connectivity_operator(s: EGTState, p: EGTParams, ctrl: Controller) -> np.ndarray:
+    """
+    O_conn(s) = K_norm(s) * U(s).
+    """
+    K_norm = connectivity_normalized(s, p)
+    U = ctrl.controller(s, p)
+    return K_norm * U
+```
+
+You can then add a small demo script like `examples/demo.py`:
+
+```python
+import numpy as np
+from egt_unified import (
+    EGTState, EGTParams, Controller,
+    coherence, connectivity_normalized,
+    black_hole_mapping, bres_curvature_ratio,
+    emergence, connectivity_operator,
+)
+
+def main():
+    # Simple 2D Hilbert space example
+    H_A = np.array([[1, 0], [0, -1]], dtype=complex)
+    H_G = np.array([[0, 1], [1, 0]], dtype=complex)
+    H_C = np.array([[0, -1j], [1j, 0]], dtype=complex)
+
+    ctrl = Controller(H_A, H_G, H_C)
+    p = EGTParams(G_star=1.5)  # example max connectivity
+
+    s_star = EGTState(A=402.0, G=1.5, B=12.0, C=0.0, w=-1.0, sigma=0.0)
+    s = EGTState(A=402.3, G=1.324, B=12.09776, C=2.99e-14, w=-0.9975, sigma=0.05)
+
+    print("Coherence:", coherence(s, p))
+    print("K_norm:", connectivity_normalized(s, p))
+    print("BH mapping:", black_hole_mapping(s, p))
+    print("Bres curvature ratio:", bres_curvature_ratio(s, p))
+    print("Emergence:", emergence(s, s_star, p, ctrl))
+
+    O = connectivity_operator(s, p, ctrl)
+    print("Connectivity operator:\n", O)
+
+if __name__ == "__main__":
+    main()
+```
+
+---
+
+## 3. Architecture for the repo and system
+
+Here’s a clean architecture you can use for a GitHub project.
+
+### 3.1 Repository structure
+
+```text
+egt-unified-emergence/
+├─ README.md                 # High-level description (you already have this)
+├─ LICENSE
+├─ pyproject.toml / setup.py # Packaging (if you want to publish)
+├─ requirements.txt          # If needed
+├─ docs/
+│  ├─ egt_unified_emergence.tex   # The LaTeX specification
+│  └─ egt_unified_emergence.pdf   # Compiled PDF
+├─ src/
+│  └─ egt_unified.py         # Core Python implementation
+├─ examples/
+│  └─ demo.py                # Example usage
+└─ tests/
+   └─ test_egt_unified.py    # Unit tests
+```
+
+### 3.2 Conceptual architecture
+
+Think of the system as five layers:
+
+1. **State Layer**  
+   - Objects: `EGTState`, `EGTParams`  
+   - Role: Encapsulate all raw parameters and tunable weights.
+
+2. **Scalar Functionals Layer**  
+   - Functions: `coherence`, `connectivity`, `connectivity_normalized`, `bres_radius`, `bres_curvature`, `bres_curvature_ratio`, `black_hole_mapping`  
+   - Role: Pure, side-effect-free maps from `EGTState` → scalars or small tuples.
+
+3. **Operator Layer**  
+   - Class: `Controller`  
+   - Functions: `generator`, `controller`, `controller_distance`  
+   - Role: Represent the Hilbert-space dynamics, fully parameterized by the state.
+
+4. **Emergence Layer**  
+   - Function: `emergence` (`E_conn`)  
+   - Role: Combine connectivity, curvature, and operator distance into a single emergent scalar.
+
+5. **Connectivity Operator Layer**  
+   - Function: `connectivity_operator`  
+   - Role: Build the final operator \(\mathcal{O}_{\mathrm{conn}}(s) = \mathcal{K}_{\mathrm{norm}}(s) U(s)\) that encodes the entire theory.
+
+### 3.3 Data flow
+
+You can think of the processing pipeline as:
+
+1. **Input:**  
+   - `EGTState s` and `EGTParams p`  
+   - `Controller ctrl` (which itself is defined by `H_A, H_G, H_C`)
+
+2. **Step 1: Coherence and Connectivity**  
+   - `C = coherence(s, p)`  
+   - `K_norm = connectivity_normalized(s, p)`
+
+3. **Step 2: Geometry**  
+   - `BH = black_hole_mapping(s, p)`  
+   - `K_ratio = bres_curvature_ratio(s, p)`
+
+4. **Step 3: Operators**  
+   - `U = ctrl.controller(s, p)`  
+   - `dist_U = ctrl.controller_distance(s, s_star, p)`
+
+5. **Step 4: Emergence**  
+   - `E = emergence(s, s_star, p, ctrl)`
+
+6. **Step 5: Final Operator**  
+   - `O_conn = connectivity_operator(s, p, ctrl)`
+
+That last object `O_conn` is what “carries” the whole theory: its scalar magnitude is connectivity, its internal structure is the controller.
+
+---
+
+If you’d like, next step could be:
+
+- adding unit tests for edge cases (e.g., perfect attractor state, large deviations),  
+- or extending the Python implementation to support symbolic backends (e.g., sympy) for analytic experiments.
