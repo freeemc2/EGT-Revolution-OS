@@ -1,14 +1,1 @@
-egt-unified-emergence/
-├─ README.md                 # High-level description (you already have this)
-├─ LICENSE
-├─ pyproject.toml / setup.py # Packaging (if you want to publish)
-├─ requirements.txt          # If needed
-├─ docs/
-│  ├─ egt_unified_emergence.tex   # The LaTeX specification
-│  └─ egt_unified_emergence.pdf   # Compiled PDF
-├─ src/
-│  └─ egt_unified.py         # Core Python implementation
-├─ examples/
-│  └─ demo.py                # Example usage
-└─ tests/
-   └─ test_egt_unified.py    # Unit tests
+
