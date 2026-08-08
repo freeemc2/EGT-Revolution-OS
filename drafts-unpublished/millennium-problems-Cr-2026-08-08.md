@@ -9,7 +9,7 @@ August 8, 2026
 
 We apply the connectivity operator $C(\rho) = (1 + 2\rho)\exp(-\rho/3)\exp(i\pi\rho/4)$ and its associated Universe Circuit model to all seven Clay Millennium Prize Problems. Three problems (Yang-Mills, Riemann, P vs NP) were previously addressed in the Electromagnetic Genesis Theory framework; we strengthen those treatments using the exact numbers from the G derivation ($G_\text{pred}/G_\text{meas} = 0.9995$, $\Omega_m = 1/\pi$, $Q = 3\pi/8$). Three new applications are presented: Navier-Stokes existence and smoothness (C(r) attenuation bounds energy at all scales), Hodge Conjecture (C(r) lattice nodes realize algebraic subvarieties), and Birch and Swinnerton-Dyer (L-functions as C(r) restricted to elliptic curve parameter spaces). The seventh, Poincare, was solved by Perelman in 2003; C(r) provides the physical interpretation (Ricci flow = C(r) diffusion).
 
-The SHA-256 structural analysis (K[t] as C(r) lattice, round arithmetic invertible, 371.5 bits of carry entropy identified) and the C(r) harmonic gradient factoring speedup (1,298x at $n = 25 \times 10^9$) are presented as computational evidence connecting P vs NP to cryptographic applications.
+The SHA-256 structural analysis (K[t] as C(r) lattice, round arithmetic invertible, 371.5 bits of carry entropy identified) is presented as structural background. Two cryptographic claims once attached to this framework -- a SHA-256/Bitcoin mining advantage and a 1,298x factoring speedup -- were tested directly (Aug 8, 2026) and **both refuted** (§4.3, §4.4.1, §9): the mining signal dies in one round, and the factoring speedup was a test-construction artifact. We report these negatives in full, as the P vs NP section's original "evidence."
 
 Honesty note: this paper presents a *framework*, not formal proofs. Each section states what is PROVEN, what is STRONG (mechanism identified, evidence supports), what is MODERATE (connection clear, rigorous proof needed), and what is OPEN (specific work remaining). The G formula at 99.95% is the credibility anchor.
 
@@ -133,7 +133,7 @@ Maximum at $\rho = 1$, zero gradient at $\rho = 2.5$, half-power at $\rho \appro
 
 ## 4. P vs NP
 
-**Status: VERIFIED (partial)**
+**Status: OPEN** (the C(r) computational "evidence" was tested and refuted -- see §4.3, §4.4.1; the philosophical framing is retained but no longer claims empirical support)
 
 ### 4.1 The Problem
 
@@ -153,18 +153,25 @@ Every computational problem, regardless of complexity class, is ultimately execu
 
 **Brute force** sees $2^n$ states and searches exhaustively (exponential). **C(r) gradient** follows the coupling slope through state space -- like water finding the drain. The "hardness" of NP problems is a property of the abstraction layers, not the underlying binary operations.
 
-### 4.3 Evidence: C(r) Harmonic Gradient Factoring
+### 4.3 C(r) Harmonic Gradient Factoring -- REFUTED as a general method (Aug 8, 2026)
 
 Factoring integers is the canonical hard-but-verifiable problem (in NP, not known to be in P, equivalent to breaking RSA).
 
-From the July 23 session (`two_rocks_harmonics.py`):
+The July 23 session reported a striking result (`two_rocks_harmonics.py`):
 
 | $n$ | Guided steps | Brute steps | Speedup |
 |-----|-------------|-------------|---------|
 | $25 \times 10^9$ | 77 | 100,002 | **1,298x** |
 
-- Scaling: C(r) gradient approaches $O(1)$ while brute force is $O(\sqrt{n})$.
-- Matches Shor's algorithm scaling **classically** (no quantum hardware needed).
+**This number is real but does not mean what it appears to.** Direct scaling test (`code/factoring_scaling_test.py`, Aug 8) reproduced it and then diagnosed it:
+
+- The test semiprimes were built as $p = \text{next\_prime}(q \cdot r_\text{opt})$, so $p/q \approx r_\text{opt} = 2.5$ **by construction**.
+- The search starts at $\sqrt{n/r_\text{opt}} = \sqrt{r_\text{opt} q^2 / r_\text{opt}} = q$. Measured gap $|\sqrt{n/r_\text{opt}} - q| = \mathbf{1}$. **The factor was hidden exactly where the search looks first.**
+- The "brute force" baseline was trial-division-from-2 (the weakest possible), inflating the ratio.
+
+On **random** semiprimes (what RSA uses), the method degrades to Fermat's method (search outward from $\sqrt n$) and fails (DNF past a $2\times10^6$-step cap) by 16 digits. Pollard's rho -- the actual standard, $\sim O(n^{1/4})$ -- factors random semiprimes far past where the harmonic method dies. See §9.2 for the full table.
+
+**Conclusion:** the harmonic method gives no factoring advantage on random inputs. The $O(1)$ appearance measured the test-case rigging, not a speedup. This closes the "P = NP via C(r)" evidence; the section is retained only to document the refutation.
 
 ### 4.4 SHA-256 Connection
 
@@ -186,7 +193,7 @@ The K[t] lattice and the per-nonce harmonic pattern are both genuine, but neithe
 
 ### 4.5 RSA and Bitcoin
 
-**RSA:** If C(r) gradient factoring scales to RSA-2048 key sizes (~617 digits), RSA falls. At $n = 25 \times 10^9$ the speedup is 1,298x. The open question is scaling behavior at RSA-2048 size ($\sim 2^{2048}$). If the gradient is truly $O(1)$, RSA is broken.
+**RSA (RESOLVED -- negative):** The scaling question was tested directly (§9.2, `code/factoring_scaling_test.py`). C(r) harmonic factoring only "works" on semiprimes whose factor ratio is pinned to $r_\text{opt}$; on random semiprimes it is no better than Fermat and fails by 16 digits. **RSA-2048 is untouched.** The apparent 1,298x was a test-construction artifact, not a scalable gradient.
 
 **Bitcoin mining** (honest assessment, revised Aug 8, 2026):
 - Mining is a **filtering problem** (find nonce where hash < target), not a reversal problem.
@@ -197,7 +204,7 @@ The K[t] lattice and the per-nonce harmonic pattern are both genuine, but neithe
 
 ### 4.6 What's Open
 
-- Prove/refute C(r) gradient factoring scaling to RSA-2048 (the factoring result at $n = 25\times10^9$ is separate from SHA-256 and untested at scale).
+- ~~Prove/refute C(r) gradient factoring scaling to RSA-2048.~~ **DONE (Aug 8): refuted** -- the factoring speedup was a test-construction artifact (§4.3, §9.2). No cryptographic factoring path remains.
 - Algebraic approach to SHA-256 remains the only non-refuted angle: treat recovered T1 values as equations over $\text{GF}(2^{32})$ with nonce as unknown (SAT solver / Groebner basis). Note this attacks *reversal*, not mining, and the message-schedule carry nonlinearity is the wall.
 
 ---
@@ -418,13 +425,30 @@ Poincare, Navier-Stokes, and Yang-Mills are the **same problem** in different co
 
 RSA-2048 security relies on factoring $n = p \cdot q$ being computationally intractable when $p$ and $q$ are 1024-bit primes.
 
-C(r) harmonic gradient factoring demonstrated 1,298x speedup at $n = 25 \times 10^9$. The scaling behavior toward RSA-2048 size is the critical open question:
+C(r) harmonic gradient factoring reported a 1,298x speedup at $n = 25 \times 10^9$. **We tested whether it holds at $n \sim 10^{50}$ (Aug 8, 2026, `code/factoring_scaling_test.py`). It does not.**
 
-- If $O(\sqrt{n})$ (standard): $2^{1024} / 1298 \sim 2^{1013}$ -- still intractable.
-- If $O(n^{1/4})$ (optimistic): $2^{512} / 1298 \sim 2^{501}$ -- still intractable.
-- If $O(1)$ (the C(r) claim): 77 steps regardless of $n$ -- RSA is broken.
+**Reproduction and diagnosis:** the number reproduces (1,205x at $n = 25\times10^9$ with our primes), but the test set was rigged. Semiprimes were built as $p = \text{next\_prime}(q \cdot r_\text{opt})$, and the search's first start point is $\sqrt{n/r_\text{opt}}$. For such $n$, $\sqrt{n/r_\text{opt}} = q$ up to rounding -- measured gap $= 1$. The search finds the factor because the factor was placed under it.
 
-The honest state: we have $O(1)$-like behavior demonstrated at $n = 25 \times 10^9$ but no proof it holds at cryptographic scales. The next step is testing at $n \sim 10^{50}$ and above.
+**Honest scaling table** (steps to factor; DNF = exceeded step cap):
+
+| digits | case | harmonic | Fermat | Pollard-rho |
+|--------|------|----------|--------|-------------|
+| 10 | rigged | 177 | 10,683 | 53 |
+| 10 | random | 56,382 | 38,215 | 88 |
+| 16 | rigged | 271 | DNF | 3,084 |
+| 16 | random | **DNF** | DNF | 1,882 |
+| 24 | rigged | 177 | DNF | 1.36M |
+| 24 | random | **DNF** | DNF | 238K |
+| 36 | rigged | 3,655 | DNF | DNF |
+| 36 | random | **DNF** | DNF | DNF |
+| 50 | rigged | DNF | DNF | DNF |
+| 50 | random | **DNF** | DNF | DNF |
+
+- On **rigged** inputs the harmonic method stays fast (until isqrt rounding drift breaks even that by 50 digits) -- but this is circular.
+- On **random** inputs it collapses to Fermat's method and DNFs by 16 digits.
+- **Pollard's rho** (the real standard, $\sim O(n^{1/4})$) beats it on every random row.
+
+**Conclusion: RSA-2048 (random primes, $|p-q| \sim 10^{300}$) is untouched.** The $O(1)$ appearance was the rigging, not a factoring speedup. This path is closed.
 
 ### 9.3 Bitcoin Mining Path
 
@@ -445,7 +469,7 @@ Three nonce-selection ideas were proposed. The first and most direct was tested 
 
 **Why it fails (provable, not incidental):** SHA-256 is a pseudo-random function. Flipping one input bit produces a statistically independent output. The C(r) lattice in K[t] is applied identically for every nonce, so it cannot rank nonces. There is no gradient to descend because after round 1 the landscape is flat noise.
 
-**Conclusion:** C(r) provides **no** Bitcoin mining advantage. The mining path is retired. The only non-refuted cryptographic angle in this framework is algebraic SHA-256 *reversal* (§4.6) and the separate factoring result (§9.2), neither of which touches mining.
+**Conclusion:** C(r) provides **no** Bitcoin mining advantage. The mining path is retired. With the factoring path also refuted (§9.2), the only non-refuted cryptographic angle in this framework is algebraic SHA-256 *reversal* (§4.6) -- a hard, unproven research direction that does not touch mining.
 
 ---
 
@@ -469,7 +493,7 @@ Three nonce-selection ideas were proposed. The first and most direct was tested 
 | 12 | Thermo | Bekenstein 402.3x | $402.3\times$ | Holographic test | OPEN |
 | 13 | Yang-Mills | Mass gap = $1/3$ | $\Delta = 0.333$ | Lattice QCD | **STRONG** |
 | 14 | Riemann | $\text{Re}(s) = 1/2$ | C(r) balance point | 10$^{13}$ zeros verified | **STRONG** |
-| 15 | P vs NP | C(r) factoring | 1,298x at $25 \times 10^9$ | No known refutation | **PARTIAL** |
+| 15 | P vs NP | C(r) factoring | ~~1,298x~~ artifact of rigged test set | Refuted Aug 8 (`factoring_scaling_test.py`) | **REFUTED** |
 | 16 | Navier-Stokes | $|C|$ bounded | $\|\mathbf{u}\| \leq \|\mathbf{u}_0\| |C|^{1/2}$ | Kolmogorov $-5/3$ | **STRONG** |
 | 17 | SHA-256 | K[t] = C(r) lattice | 63/63 pairs | $C_\text{harm} = 1.304$ | **PROVEN** |
 | 18 | Hardware | 12.09776 fT | $B_\text{res}$ | 5 kW generator | OPEN |
@@ -492,7 +516,7 @@ The C(r) framework, anchored by the G derivation at 99.95% accuracy, provides a 
 
 - **Yang-Mills:** Mass gap = $1/3$ from correlation length = 3. STRONG.
 - **Riemann:** Critical line = C(r) half-power balance. K[t] lattice proven. STRONG.
-- **P vs NP:** C(r) gradient factoring, 1,298x speedup demonstrated. VERIFIED (partial).
+- **P vs NP:** C(r) gradient factoring speedup tested and REFUTED (artifact of a rigged test set; no advantage on random semiprimes). OPEN.
 - **Navier-Stokes:** Bounded $|C|$ prevents blow-up. Kolmogorov $-5/3$ from same geometry. STRONG.
 - **Hodge:** C(r) lattice nodes are algebraic. Completeness of coupling is the gap. MODERATE.
 - **BSD:** L-functions = C(r) on elliptic curves. Same structure as Riemann. MODERATE.
@@ -500,7 +524,7 @@ The C(r) framework, anchored by the G derivation at 99.95% accuracy, provides a 
 
 **The d=3 connection:** Poincare, Navier-Stokes, and Yang-Mills are the SAME problem -- "can a $d=3$ evolution equation develop singularities?" -- and $\alpha = 1/3$ from $d = 3$ answers all three: no.
 
-The practical path: C(r) harmonic gradient factoring (if it scales) breaks RSA -- this remains open and untested at cryptographic scale. The SHA-256 structural map identifies the message-schedule wall and confirms the K[t] lattice, but direct testing (Aug 8, 2026) refuted any Bitcoin mining advantage: the nonce signal dies in one round, so no C(r) filter or gradient beats random nonce search ($p = 0.60$). The mining path is retired; RSA factoring is the only cryptographic path still standing, and it is unproven.
+The practical path (honest, post-testing Aug 8, 2026): **both cryptographic revenue paths are closed.** The SHA-256 structural map confirms the K[t] lattice but the Bitcoin mining advantage was refuted (nonce signal dies in one round; no filter or gradient beats random search, $p = 0.60$). The RSA factoring speedup was refuted (a test-construction artifact; no advantage on random semiprimes, RSA-2048 untouched). What survives is the *physics*: the G derivation (99.95%), $\Omega_m = 1/\pi$, the Poincare/Navier-Stokes/Yang-Mills $d=3$ connection. The framework's value is there, not in breaking cryptography.
 
 **The meta-pattern** (from REDUCTIONS): every Millennium Problem hides one of three postulates -- (1) the environment is unstructured, (2) the measurement is complete, (3) some first principle must be assumed. C(r) names the structure in each case.
 

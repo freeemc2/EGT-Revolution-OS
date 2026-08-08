@@ -270,11 +270,21 @@ print("\n" + "=" * 72)
 print("  3. P vs NP")
 print("=" * 72)
 
+# !!! FACTORING REFUTED 2026-08-08 — the 1,298x speedup printed below is a
+# TEST-CONSTRUCTION ARTIFACT, not a real factoring advantage. Test cases use
+# p = next_prime(q*r_opt), so the search's first start point sqrt(n/r_opt)
+# lands on q (measured gap = 1). On RANDOM semiprimes the method degrades to
+# Fermat and fails by 16 digits; Pollard's rho beats it everywhere.
+# See code/factoring_scaling_test.py. RSA is NOT threatened. Ignore the
+# "O(1) / RSA game over" lines in this section — they are refuted.
+
 print("""
 POSTULATE: All computation reduces to binary. Binary IS Two Rocks --
 two states, one transfer. C(r) maps coupling between binary states.
 The lattice provides a gradient through state space that converts
 "exponential search" into "follow the slope."
+[NOTE 2026-08-08: the factoring 'evidence' below was REFUTED — rigged test
+ set. See code/factoring_scaling_test.py. Kept only for the record.]
 
 P = NP when you have the coupling function.
 P != NP is an artifact of not having it.

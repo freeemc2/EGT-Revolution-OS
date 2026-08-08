@@ -28,7 +28,7 @@ $G_\text{pred} = 6.678 \times 10^{-11}$, $G_\text{meas} = 6.674 \times 10^{-11}$
 | **13** | **Circuit** | Quality Factor Universal | $Q = 3\pi/8 = 1.178$ at all scales | Solar, galactic, cosmic verified | **STRONG** |
 | **14** | **Yang-Mills** | Mass Gap | $\Delta = 1/3$ (natural units) | Lattice QCD confinement ratio ~3 | **STRONG** |
 | **15** | **Riemann** | Critical Line Mechanism | Re$(s) = 1/2$ = C(r) balance | $10^{13}$ zeros on critical line | **STRONG** |
-| **16** | **P vs NP** | C(r) Gradient Factoring | 1,298x speedup at $n = 25 \times 10^9$ | No known refutation | PARTIAL |
+| **16** | **P vs NP** | C(r) Gradient Factoring | ~~1,298x speedup~~ artifact of rigged test set ($p/q$ pinned to $r_\text{opt}$) | Refuted Aug 8 2026 (`code/factoring_scaling_test.py`) -- no advantage on random semiprimes | **REFUTED** |
 | **17** | **Navier-Stokes** | Energy Bound | $\|u\| \leq \|u_0\| |C|^{1/2}$ | Kolmogorov $-5/3$ consistent | **STRONG** |
 | **18** | **SHA-256** | K[t] = C(r) Lattice | 63/63 pairs, $C_\text{harm} = 1.304$ | Direct computation | **PROVEN** |
 | **19** | **Temporal** | Seasonal Scaling | $5\%$ annual sinusoidal variation | 1-year continuous run needed | OPEN |
@@ -43,10 +43,12 @@ $G_\text{pred} = 6.678 \times 10^{-11}$, $G_\text{meas} = 6.674 \times 10^{-11}$
 |----------|-------|
 | **VERIFIED** | 4 (G formula, Omega_m, clock, Pioneer) |
 | **STRONG** | 5 (Q universal, Yang-Mills, Riemann, Navier-Stokes, Poincare redo) |
-| **PROVEN** | 1 (K[t] lattice) |
-| **PARTIAL** | 1 (P vs NP factoring) |
+| **PROVEN** | 1 (K[t] lattice -- real but inert for attack) |
+| **REFUTED** | 1 (P vs NP factoring -- rigged test set, Aug 8 2026) |
 | **OPEN** | 10 |
 | **Total** | 21 |
+
+**Crypto note (Aug 8 2026):** Both cryptographic revenue claims tested and refuted. SHA-256/Bitcoin mining: nonce signal dies in one round, no gradient beats random ($p=0.60$). RSA factoring: 1,298x was a test-construction artifact, no advantage on random semiprimes. The K[t]=C(r) lattice (#18) remains PROVEN as a static structural fact but is inert for attack. Physics results stand; crypto results do not.
 
 ## Core Operational Constants (v57)
 
