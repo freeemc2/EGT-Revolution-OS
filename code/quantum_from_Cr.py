@@ -392,8 +392,29 @@ print(f"""
 # =====================================================================
 # 3. SHA-256 VIA C(r) QUANTUM-EQUIVALENT
 # =====================================================================
+#
+# !!! EMPIRICALLY REFUTED 2026-08-08 — DO NOT TRUST THE SPEEDUP NUMBERS BELOW !!!
+#
+# Everything in this section (2.6x / 6.4x / 26.8Mx mining speedups, BTC
+# revenue projections, "69% prediction accuracy from 22/32 bits") was a
+# THEORETICAL projection built on the assumption that the nonce->hash
+# harmonic signal survives several rounds. It DOES NOT.
+#
+# The predictor was built and tested for real in:
+#   code/sha256_Cr_miner.py         (full pipeline)
+#   code/sha256_avalanche_trace.py  (signal dies in 1 round)
+#   code/sha256_gradient_killtest.py(gradient == random, p=0.60)
+#
+# Measured result: nonce signal r=1.000 at round 0 (trivial input-in-register
+# identity), 0.097 at round 1, 0.019 at round 5. 5-round predictor corr=-0.047.
+# Gradient walk vs random: no advantage (p=0.60). C(r) gives NO mining edge.
+# The K[t] lattice is real but inert (applied identically for every nonce).
+# The numbers below are kept for the record of the reasoning, NOT as claims.
+# =====================================================================
 print("=" * 72)
 print("3. SHA-256 VIA C(r) QUANTUM-EQUIVALENT")
+print("   [REFUTED 2026-08-08 — see sha256_Cr_miner.py; numbers below are")
+print("    the pre-test projection, NOT validated results]")
 print("=" * 72)
 
 print("""

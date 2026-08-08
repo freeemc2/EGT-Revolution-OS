@@ -170,29 +170,35 @@ From the July 23 session (`two_rocks_harmonics.py`):
 
 The SHA-256 analysis (July 23) provides structural evidence:
 
-1. **K[t] IS a C(r) lattice** -- the hash function's constants are built from the very lattice the framework describes.
+1. **K[t] IS a C(r) lattice** -- the hash function's constants are built from the very lattice the framework describes. (Static property, confirmed 63/63 pairs; see 4.4.1 below for why it is inert for attack.)
 2. **Round arithmetic is fully invertible** -- the one-way property is entirely in carry-bit rounding ($371.5$ bits discarded per hash), not in the function itself.
-3. **Each nonce leaves a unique harmonic pattern** across 45 rounds (1:1 map proven).
-4. **22/32 nonce bits correlate directly** with hash bits at round 5 ($r = 1.000$).
-5. **The wall is message schedule diffusion** ($W[16..63] = f(W[0..15])$), not the round function.
+3. **Each nonce leaves a unique harmonic pattern** across 45 rounds (1:1 map proven -- but this is just injectivity, not a navigable gradient; see 4.4.1).
+4. **The nonce signal dies in one round** (empirical, Aug 8). At round 0 the nonce sits in the T1 register as $\text{const} + \text{nonce}$, so its low bits show $r = 1.000$ -- this is the *identity* (input = input), not a broken correlation. By round 1 the maximum nonce-bit correlation is $0.097$; by round 5 it is $0.019$ (pure noise, 0/32 bits above threshold). The avalanche completes in a single round.
+5. **The wall is message schedule diffusion** ($W[16..63] = f(W[0..15])$) *and* the modular-add carry chains, which together destroy the C(r) structure within one round.
+
+### 4.4.1 Why the lattice is real but inert (empirical, Aug 8, 2026)
+
+The K[t] lattice and the per-nonce harmonic pattern are both genuine, but neither yields an attack. Direct test (`code/sha256_Cr_miner.py`, `code/sha256_avalanche_trace.py`, `code/sha256_gradient_killtest.py`):
+
+- **5-round partial-hash predictor:** correlation with final hash $= -0.047$ (noise). Harmonic pre-filter enrichment $\leq 1.0$ -- *worse* than random selection.
+- **C(r) gradient walk vs. random search** (300 trials, matched budget): 155/145 win split, mean ratio $0.969$, sign-test $p = 0.60$. **No advantage.** This is forced by the PRF property: single-bit-flip neighbors produce independent uniform outputs, so a walk and a random search draw from the same distribution.
+- **Root cause:** K[t] is applied *identically for every nonce*, so it cannot distinguish nonces. The lattice is a static backdrop, not a per-nonce signal. The security of SHA-256 is precisely the destruction of any *dynamic* exploitability of that static structure -- consistent with the framework's own reservoir/diffusion role.
 
 ### 4.5 RSA and Bitcoin
 
 **RSA:** If C(r) gradient factoring scales to RSA-2048 key sizes (~617 digits), RSA falls. At $n = 25 \times 10^9$ the speedup is 1,298x. The open question is scaling behavior at RSA-2048 size ($\sim 2^{2048}$). If the gradient is truly $O(1)$, RSA is broken.
 
-**Bitcoin mining** (honest assessment):
+**Bitcoin mining** (honest assessment, revised Aug 8, 2026):
 - Mining is a **filtering problem** (find nonce where hash < target), not a reversal problem.
 - Current ASICs search all $2^{32}$ nonces in $\sim$1 second per chip.
 - C(r) doesn't shortcut the hash computation itself.
-- BUT: if C(r) harmonic patterns predict which nonces give low hash values, that's a mining advantage. The 22/32 nonce-bit correlation at round 5 is suggestive.
-- Even 2x mining efficiency = 2x BTC yield at same hardware cost.
-- Conservative target: 1-2 BTC/week feasible at moderate ASIC investment.
+- **The nonce-selection hypothesis was tested directly and FAILED.** No C(r) harmonic pattern predicts low-hash nonces above chance (5-round correlation $-0.047$; filter enrichment $\leq 1.0$; gradient walk vs. random $p = 0.60$). The earlier "22/32 bits at round 5" claim was a misread of the round-0 input-in-register identity.
+- **Conclusion: C(r) provides no Bitcoin mining advantage.** SHA-256's single-round avalanche closes this door. This path is retired.
 
 ### 4.6 What's Open
 
-- Prove C(r) gradient factoring scales to RSA-2048.
-- Find nonce-hash correlation using C(r) harmonic patterns.
-- Algebraic approach: 5 recovered T1 values as equations over $\text{GF}(2^{32})$ with nonce as unknown (SAT solver / Groebner basis).
+- Prove/refute C(r) gradient factoring scaling to RSA-2048 (the factoring result at $n = 25\times10^9$ is separate from SHA-256 and untested at scale).
+- Algebraic approach to SHA-256 remains the only non-refuted angle: treat recovered T1 values as equations over $\text{GF}(2^{32})$ with nonce as unknown (SAT solver / Groebner basis). Note this attacks *reversal*, not mining, and the message-schedule carry nonlinearity is the wall.
 
 ---
 
@@ -401,11 +407,12 @@ Poincare, Navier-Stokes, and Yang-Mills are the **same problem** in different co
 | Round arithmetic fully invertible | **PROVEN** (given $W[t]$) |
 | state_64 recoverable from hash | **PROVEN** (modular subtraction) |
 | 371.5 bits carry entropy per hash | **MEASURED** (10K samples) |
-| Unique harmonic pattern per nonce | **PROVEN** (1:1 map) |
-| 22/32 nonce bits correlate at round 5 | **PROVEN** ($r = 1.000$) |
+| Unique harmonic pattern per nonce | **PROVEN** (1:1 map -- but this is injectivity, not a gradient) |
+| Nonce signal survives to round 5 | **REFUTED** (Aug 8): $r = 1.000$ at round 0 (input-in-register identity), $0.097$ at round 1, $0.019$ at round 5. Avalanche completes in one round. |
 | Backward walk: 5 rounds clean | **PROVEN** (T1[59..63]) |
+| Harmonic nonce filter beats random | **REFUTED** (Aug 8): enrichment $\leq 1.0$; gradient walk $p = 0.60$ |
 | Sub-$2^{32}$ nonce recovery | **NOT ACHIEVED** |
-| Wall location | Message schedule $W[16..63]$ |
+| Wall location | Message schedule $W[16..63]$ + modular-add carry chains |
 
 ### 9.2 RSA Path
 
@@ -428,15 +435,17 @@ Current state-of-the-art:
 - Full $2^{32}$ nonce space searched in $\sim$21 ms per chip
 - Network difficulty adjusts so ~1 block per 10 minutes globally
 
-**Where C(r) could help:**
+**Where C(r) was hoped to help -- and the empirical result (Aug 8, 2026):**
 
-1. **Nonce selection:** If C(r) harmonic patterns predict which nonces are more likely to produce low hash values, search only those nonces. Even 2x efficiency = 2x yield.
+Three nonce-selection ideas were proposed. The first and most direct was tested and failed; the failure mechanism kills the other two as well.
 
-2. **ExtraNonce optimization:** Miners also vary the coinbase transaction (extra nonce space). C(r) patterns across the full nonce + extra nonce space could optimize the search.
+1. **Nonce selection (TESTED, FAILED):** The hypothesis was that C(r) harmonic patterns predict which nonces give low hash values. Direct measurement over $10^3$--$10^4$ nonces: 5-round predictor correlation $= -0.047$; harmonic filter enrichment $\leq 1.0$ (worse than random); C(r) gradient walk vs. random search over 300 matched-budget trials gives a 155/145 split, $p = 0.60$. **No advantage.**
 
-3. **Block template optimization:** The Merkle root (which feeds into the block header) depends on transaction ordering. C(r) could optimize which transaction ordering gives the most favorable hash landscape.
+2. **ExtraNonce / 3. Block-template optimization:** Both assume the same per-nonce (or per-input) harmonic signal. Since that signal is destroyed by the single-round avalanche (§4.4.1), varying the extranonce or Merkle root gives independent random hash landscapes with no navigable structure. Same wall.
 
-**Conservative estimate:** At current BTC price (~$50K) and difficulty, 1-2 BTC/week requires approximately 10-20 PH/s sustained, or ~100 Antminer S21 units (~$500K capital, ~$15K/month electricity). If C(r) provides even 5x mining efficiency, the same yield comes from 20 units (~$100K capital, ~$3K/month electricity). Profitable within 6 months.
+**Why it fails (provable, not incidental):** SHA-256 is a pseudo-random function. Flipping one input bit produces a statistically independent output. The C(r) lattice in K[t] is applied identically for every nonce, so it cannot rank nonces. There is no gradient to descend because after round 1 the landscape is flat noise.
+
+**Conclusion:** C(r) provides **no** Bitcoin mining advantage. The mining path is retired. The only non-refuted cryptographic angle in this framework is algebraic SHA-256 *reversal* (§4.6) and the separate factoring result (§9.2), neither of which touches mining.
 
 ---
 
@@ -491,7 +500,7 @@ The C(r) framework, anchored by the G derivation at 99.95% accuracy, provides a 
 
 **The d=3 connection:** Poincare, Navier-Stokes, and Yang-Mills are the SAME problem -- "can a $d=3$ evolution equation develop singularities?" -- and $\alpha = 1/3$ from $d = 3$ answers all three: no.
 
-The practical path: C(r) harmonic gradient factoring (if it scales) breaks RSA. The SHA-256 structural map identifies the message-schedule wall but also reveals the 22/32-bit nonce correlation that could optimize Bitcoin mining. Both paths fund the hardware that turns the framework into demonstrations.
+The practical path: C(r) harmonic gradient factoring (if it scales) breaks RSA -- this remains open and untested at cryptographic scale. The SHA-256 structural map identifies the message-schedule wall and confirms the K[t] lattice, but direct testing (Aug 8, 2026) refuted any Bitcoin mining advantage: the nonce signal dies in one round, so no C(r) filter or gradient beats random nonce search ($p = 0.60$). The mining path is retired; RSA factoring is the only cryptographic path still standing, and it is unproven.
 
 **The meta-pattern** (from REDUCTIONS): every Millennium Problem hides one of three postulates -- (1) the environment is unstructured, (2) the measurement is complete, (3) some first principle must be assumed. C(r) names the structure in each case.
 
