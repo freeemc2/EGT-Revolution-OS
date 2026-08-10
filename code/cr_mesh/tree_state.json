@@ -1,0 +1,143 @@
+{
+  "root": "dragonseye",
+  "nodes": {
+    "dragonseye": {
+      "level": 0,
+      "r": 0,
+      "parent": null,
+      "children": [
+        "pi",
+        "elevateprogram-scraper"
+      ],
+      "coupling": 1.0,
+      "phase_deg": 0.0,
+      "online": true,
+      "rtt_ms": 0.0,
+      "ip": "100.121.177.94",
+      "type": "x86",
+      "cores": 16
+    },
+    "pi": {
+      "level": 1,
+      "r": 1,
+      "parent": "dragonseye",
+      "children": [
+        "oracle",
+        "openclaw-prod"
+      ],
+      "coupling": 2.149593931721368,
+      "phase_deg": 45.0,
+      "online": true,
+      "rtt_ms": 10.0,
+      "ip": "100.81.123.41",
+      "type": "arm",
+      "cores": 4
+    },
+    "elevateprogram-scraper": {
+      "level": 1,
+      "r": 1,
+      "parent": "dragonseye",
+      "children": [
+        "egt-bot"
+      ],
+      "coupling": 2.149593931721368,
+      "phase_deg": 45.0,
+      "online": true,
+      "rtt_ms": 15.0,
+      "ip": "100.125.99.45",
+      "type": "x86",
+      "cores": 2
+    },
+    "oracle": {
+      "level": 2,
+      "r": 2,
+      "parent": "pi",
+      "children": [],
+      "coupling": 2.5670855951629603,
+      "phase_deg": 90.0,
+      "online": true,
+      "rtt_ms": 38.0,
+      "ip": "100.114.92.17",
+      "type": "x86",
+      "cores": 2
+    },
+    "openclaw-prod": {
+      "level": 2,
+      "r": 2,
+      "parent": "pi",
+      "children": [],
+      "coupling": 2.5670855951629603,
+      "phase_deg": 90.0,
+      "online": true,
+      "rtt_ms": 123.0,
+      "ip": "100.86.79.99",
+      "type": "x86",
+      "cores": 4
+    },
+    "egt-bot": {
+      "level": 2,
+      "r": 2,
+      "parent": "elevateprogram-scraper",
+      "children": [],
+      "coupling": 2.5670855951629603,
+      "phase_deg": 90.0,
+      "online": true,
+      "rtt_ms": 128.0,
+      "ip": "100.98.78.103",
+      "type": "x86",
+      "cores": 2
+    }
+  },
+  "edges": [
+    {
+      "from": "dragonseye",
+      "to": "pi",
+      "r": 1,
+      "coupling": 2.149593931721368,
+      "phase_deg": 45.0,
+      "rtt_ms": 10.0
+    },
+    {
+      "from": "dragonseye",
+      "to": "elevateprogram-scraper",
+      "r": 1,
+      "coupling": 2.149593931721368,
+      "phase_deg": 45.0,
+      "rtt_ms": 15.0
+    },
+    {
+      "from": "pi",
+      "to": "oracle",
+      "r": 2,
+      "coupling": 2.5670855951629603,
+      "phase_deg": 90.0,
+      "rtt_ms": 38.0
+    },
+    {
+      "from": "pi",
+      "to": "openclaw-prod",
+      "r": 2,
+      "coupling": 2.5670855951629603,
+      "phase_deg": 90.0,
+      "rtt_ms": 123.0
+    },
+    {
+      "from": "elevateprogram-scraper",
+      "to": "egt-bot",
+      "r": 2,
+      "coupling": 2.5670855951629603,
+      "phase_deg": 90.0,
+      "rtt_ms": 128.0
+    }
+  ],
+  "built_at": "2026-08-10T13:50:57.597225+00:00",
+  "total_online": 6,
+  "total_configured": 6,
+  "stats": {
+    "total_coupling": 13.000444648931616,
+    "max_coupling": 2.5670855951629603,
+    "min_coupling": 1.0,
+    "tree_depth": 2,
+    "online_cores": 30
+  }
+}

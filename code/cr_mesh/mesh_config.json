@@ -1,0 +1,51 @@
+{
+  "nodes": {
+    "dragonseye": {
+      "ip": "100.121.177.94",
+      "type": "x86",
+      "cores": 16,
+      "role": "root",
+      "description": "Dragon's Eye - main compute (Windows)"
+    },
+    "openclaw-prod": {
+      "ip": "100.86.79.99",
+      "type": "x86",
+      "cores": 4,
+      "role": "compute",
+      "description": "OpenClaw VPS - Flask/Redis"
+    },
+    "pi": {
+      "ip": "100.81.123.41",
+      "type": "arm",
+      "cores": 4,
+      "role": "edge",
+      "description": "Pi5 - edge node"
+    },
+    "oracle": {
+      "ip": "100.114.92.17",
+      "type": "x86",
+      "cores": 2,
+      "role": "compute",
+      "description": "Oracle VPS"
+    },
+    "egt-bot": {
+      "ip": "100.98.78.103",
+      "type": "x86",
+      "cores": 2,
+      "role": "compute",
+      "description": "EGT bot VPS"
+    },
+    "elevateprogram-scraper": {
+      "ip": "100.125.99.45",
+      "type": "x86",
+      "cores": 2,
+      "role": "scraper",
+      "description": "Elevate scraper VPS"
+    }
+  },
+  "tree": {
+    "root": "dragonseye",
+    "ping_interval_s": 60,
+    "ping_timeout_ms": 2000
+  }
+}
