@@ -152,15 +152,32 @@ def run_servo(port, target_deg, f_start):
     redis_up()
     s.write(b"A 1.0\n"); s.flush(); time.sleep(0.2)
     freq = float(f_start)
-    s.write(f"L {freq}\n".encode()); s.flush()
+
+    def retune(f):
+        # FW GOTCHA (teensy_sweep 'L' mode): ANY byte breaks the lock loop and the
+        # fw then DRAINS the buffer — a mid-stream "L ..." gets eaten and the
+        # stream dies silently. Correct protocol: break with a bare newline, let
+        # the fw drain it and print "R LOCKED off", THEN send the complete command.
+        s.write(b"\n"); s.flush(); time.sleep(0.15)
+        s.reset_input_buffer()
+        s.write(f"L {f:.1f}\n".encode()); s.flush()
+
+    retune(freq)
     print(f"servo engaged: hold phase {target_deg}° from {freq} Hz — Ctrl-C to stop")
     skip = SETTLE_SKIP
     last_retry = time.time()
+    last_T = time.time()
     try:
         while True:
             ln = s.readline().decode(errors="replace").strip()
             if not ln.startswith("T "):
+                if time.time() - last_T > 5.0:   # watchdog: stream died, re-lock
+                    print(f"  watchdog: no T for >5s — re-sending L {freq:.1f}")
+                    retune(freq)
+                    last_T = time.time()
+                    skip = SETTLE_SKIP
                 continue
+            last_T = time.time()
             _, f, ph, mg = ln.split()
             ph = float(ph)
             err = ((ph - target_deg + 180.0) % 360.0) - 180.0   # wrapped error, ±180
@@ -188,7 +205,7 @@ def run_servo(port, target_deg, f_start):
             print(f"  {freq:.1f} Hz  phase {ph:8.4f}°  Δ {err:+7.4f}°  step {df:+6.1f} Hz  mag {mg}")
             if abs(new_freq - freq) >= 0.5:
                 freq = new_freq
-                s.write(f"L {freq}\n".encode()); s.flush()
+                retune(freq)
                 skip = SETTLE_SKIP
     except KeyboardInterrupt:
         s.write(b"x\n"); s.close(); print("\nservo released")
