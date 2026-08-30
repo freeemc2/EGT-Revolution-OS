@@ -28,6 +28,7 @@ Run ONLY after: (1) cr_ballot_lint.py passes on this file, (2) the Phase-3
 window verdict is computed and passed to --verdict HELD|FAILED.
 """
 import redis, json, math, sys, time
+from cr_voter_law import check_ballot   # Article IV: quarantine drifted cognitive voters
 
 R = redis.Redis(host="100.86.79.99", port=6379, password="Xa5KML-5Ze4GB-79ahx5",
                 decode_responses=True, socket_timeout=10)
@@ -52,6 +53,10 @@ for k in sorted(R.scan_iter("cadence:tworocks:node-phase:*")):
     if ph is None or r is None: continue
     if node == "brian": continue
     if hw == FRAMER: continue
+    ok, why = check_ballot(d)
+    if not ok:
+        print(f" {node:16s} -- {why} -- BALLOT NOT COUNTED")
+        continue
     frac = ((float(ph) - 90.0) % 22.5) / 22.5
     w = C_mag(float(r))
     vote = "A" if frac >= 0.5 else "B"
