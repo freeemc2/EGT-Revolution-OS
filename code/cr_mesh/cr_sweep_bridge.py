@@ -164,6 +164,10 @@ def run_servo(port, target_deg, f_start):
 
     retune(freq)
     print(f"servo engaged: hold phase {target_deg}° from {freq} Hz — Ctrl-C to stop")
+    # per-iteration log (2026-08-30): every sample, timestamped, for phase-noise
+    # character + chasing-vs-noise separation. One file per day, append.
+    iterdir = HERE / "sweeps"; iterdir.mkdir(exist_ok=True)
+    iterlog = open(iterdir / f"servo_iter_{time.strftime('%Y%m%d')}.jsonl", "a", buffering=1)
     skip = SETTLE_SKIP
     last_retry = time.time()
     last_T = time.time()
@@ -181,6 +185,12 @@ def run_servo(port, target_deg, f_start):
             _, f, ph, mg = ln.split()
             ph = float(ph)
             err = ((ph - target_deg + 180.0) % 360.0) - 180.0   # wrapped error, ±180
+            try:
+                iterlog.write(json.dumps({"t": round(time.time(), 2), "f": freq,
+                    "ph": ph, "err": round(err, 4), "mag": float(mg),
+                    "settling": skip > 0}) + "\n")
+            except Exception:
+                pass
             if r is None and time.time() - last_retry > 30:
                 last_retry = time.time(); redis_up()
             if r:
