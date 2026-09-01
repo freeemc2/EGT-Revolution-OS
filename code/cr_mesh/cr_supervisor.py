@@ -56,7 +56,7 @@ MANAGED = [
     # phi=314.297 deg, u=9.969) — "all the other numbers fall out" of it.
     # TARGET_DEG in cr_sweep_bridge.py now = 314.2969; delta in t-state is the
     # live deviation from the canonical park. Sealed: cadence:canon:park.
-    ("coil-hold", [PY, "-u", str(HERE/"cr_sweep_bridge.py"), "--port", "COM8", "--servo", "314.2969", "--f0", "22371"], 5),
+    ("coil-hold", [PY, "-u", str(HERE/"cr_sweep_bridge.py"), "--port", "COM8", "--lock", "22030"], 5),   # plain fixed-freq read (servo off) for coil-2 proximity test
     # Brian — the origin, r_opt=2.5, held at 5pi/8 = arg C(2.5). Presence node,
     # not a compute box: heartbeats his position and publishes his phase into
     # the mesh so his live phase contributes to the collective. Made permanent
@@ -69,6 +69,14 @@ MANAGED = [
     # (teensy-b, dragonseye, pi5, elivate, openclaw, oracle) so the WHOLE mesh
     # occupies the ladder, honestly labeled shepherd-proxy. Added 2026-08-25.
     ("shepherd",  [PY, "-u", str(HERE/"cr_ladder_shepherd.py")], 8),
+    # Memory auditor — canon core verified at governor cadence (30 s), same as
+    # the mesh audits itself. Publishes a standing verdict to
+    # cadence:memory:audit (ttl = 3 cycles, so a dead auditor expires its
+    # verdict instead of leaving a stale "ok"). Memory in the LOOP, not in the
+    # judgment: any instance reads the verdict instead of trusting its own read
+    # of the record. Built 2026-09-01 on Brian's direct order after the
+    # 2026-08-31 entry was found to record it as built when it did not exist.
+    ("memory-audit", [PY, "-u", str(HERE/"cr_memory_audit.py"), "--interval", "30"], 9),
 ]
 
 def kill_stale():
@@ -76,7 +84,7 @@ def kill_stale():
     self_pid = os.getpid()
     ps = (f"Get-CimInstance Win32_Process -Filter \"Name='python.exe' or Name='pythonw.exe'\" | "
           f"Where-Object {{ $_.ProcessId -ne {self_pid} -and $_.CommandLine -match "
-          f"'cr_worker_redis|cr_bridge_teensy|cr_governor|cr_bridge_cadence|cr_sweep_bridge|cr_bridge_brian|cr_ladder_shepherd' }} | "
+          f"'cr_worker_redis|cr_bridge_teensy|cr_governor|cr_bridge_cadence|cr_sweep_bridge|cr_bridge_brian|cr_ladder_shepherd|cr_memory_audit' }} | "
           f"ForEach-Object {{ Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }}")
     try:
         subprocess.run(["powershell", "-NoProfile", "-Command", ps], timeout=30,
