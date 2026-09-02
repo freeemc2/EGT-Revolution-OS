@@ -21,7 +21,7 @@ import uuid
 import threading
 import urllib.request
 import urllib.error
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from datetime import datetime, timezone
 from collections import defaultdict
 
@@ -30,7 +30,7 @@ from collections import defaultdict
 # =====================================================================
 
 def C(r):
-    return (1 + 2*r) * math.exp(-r/3) * cmath.exp(1j * math.pi * r / 4)
+    return (1 + 2*r) * math.exp(-r/3) * cmath.exp(1j * math.pi * r / 5)
 
 def coupling_magnitude(r):
     return abs(C(r))
@@ -40,7 +40,7 @@ def coupling_magnitude(r):
 # =====================================================================
 
 HTTP_PORT = 8092
-TREE_API = "http://localhost:8091"
+TREE_API = "http://127.0.0.1:8091"
 MAX_TASKS = 10000
 TASK_TIMEOUT_S = 30
 
@@ -298,17 +298,13 @@ def execute_on_node(node_info, task_data):
     Phase 1: simulate execution (node "computes" locally as proxy).
     Phase 2: HTTP dispatch to node worker.
     """
-    # For now, simulate computation locally
-    # The task_data contains the computation description
-    # Result = hash of (task_data + node_name) to simulate node-specific execution
-    node_name = node_info["name"]
-    result = {
-        "computed_by": node_name,
-        "computed_at": datetime.now(timezone.utc).isoformat(),
-        "input_hash": hash(json.dumps(task_data, sort_keys=True)) % (2**32),
-        "simulated": True
-    }
-    return result
+    # For now, simulate computation locally.
+    # Real compute is DETERMINISTIC: same input -> same output on every node.
+    # So the votable payload is only the computed value; provenance (which node,
+    # when) is tracked separately by store.add_result and must NOT be folded into
+    # the voted result, or every node would look like a dissenter.
+    value = hash(json.dumps(task_data, sort_keys=True)) % (2**32)
+    return {"value": value, "simulated": True}
 
 
 def process_task(task_id):
@@ -515,7 +511,7 @@ def main():
         print("start cr_tree.py first, or router will retry on each request")
 
     # Start HTTP server
-    server = HTTPServer(("0.0.0.0", HTTP_PORT), RouterAPIHandler)
+    server = ThreadingHTTPServer(("0.0.0.0", HTTP_PORT), RouterAPIHandler)
     print(f"router API listening on :{HTTP_PORT}")
     print(f"submit tasks: POST http://localhost:{HTTP_PORT}/submit")
     print(f"check status: GET  http://localhost:{HTTP_PORT}/status")

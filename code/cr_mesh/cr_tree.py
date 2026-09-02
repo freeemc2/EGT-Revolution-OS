@@ -23,7 +23,7 @@ import subprocess
 import threading
 import math
 import cmath
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -33,7 +33,7 @@ from datetime import datetime, timezone
 
 def C(r):
     """P4: coupling function. Returns complex."""
-    return (1 + 2*r) * math.exp(-r/3) * cmath.exp(1j * math.pi * r / 4)
+    return (1 + 2*r) * math.exp(-r/3) * cmath.exp(1j * math.pi * r / 5)
 
 def coupling_magnitude(r):
     return abs(C(r))
@@ -488,7 +488,7 @@ def main():
     t.start()
 
     # Start HTTP server
-    server = HTTPServer(("0.0.0.0", HTTP_PORT), TreeAPIHandler)
+    server = ThreadingHTTPServer(("0.0.0.0", HTTP_PORT), TreeAPIHandler)
     print(f"tree API listening on :{HTTP_PORT}")
     print(f"endpoints: /tree /tree/nodes /tree/online /coupling /health /refresh")
     try:
