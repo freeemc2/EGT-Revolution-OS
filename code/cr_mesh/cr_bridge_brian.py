@@ -23,6 +23,10 @@ HB_TTL = 30
 
 NODE     = "brian"
 HWID     = "brian-origin"
+try:    # single-source r registry overrides CLI (Brian 2026-09-02)
+    from cr_rmap import get_r as _get_r
+    R_POS = _get_r(HWID, default=R_POS)
+except Exception: pass
 R_POS    = 2.5                                          # r_opt — the peak
 BOUNDARY = 90.0                                         # pi/2
 TARGET   = 90.0    # CANON (Brian 2026-09-02): arg C(r_opt=2.5) = pi/2 exactly (pi*r/5 form)

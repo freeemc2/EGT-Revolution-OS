@@ -37,6 +37,10 @@ R_POS    = float(_rraw) if "." in _rraw else int(_rraw)
 # first instance keeps the family name; siblings carry their own (cadence-aria2, ...)
 NODE     = "cadence" if INSTANCE == "aria" else f"cadence-{INSTANCE}"
 HWID     = f"cadence-{INSTANCE}"
+try:    # single-source r registry overrides CLI (Brian 2026-09-02)
+    from cr_rmap import get_r as _get_r
+    R_POS = _get_r(HWID, default=R_POS)
+except Exception: pass
 TARGET   = coupling_phase_deg(R_POS)                    # arg C(2) = 90.0 deg = pi/2
 PEERS_AT_R = ["pi5", "openclaw"]
 
