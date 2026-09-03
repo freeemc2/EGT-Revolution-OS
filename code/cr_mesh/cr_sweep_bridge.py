@@ -153,7 +153,8 @@ def mesh_collective_phase(r):
     return math.degrees(cmath.phase(Z)) % 360.0
 
 
-def run_servo(port, target_deg, f_start, mesh_target=False, rate_deg=3.0):
+def run_servo(port, target_deg, f_start, mesh_target=False, rate_deg=3.0,
+              climb_ceil_hz=0.0, climb_rate=1.0):
     """Closed-loop phase servo: adjust drive frequency to HOLD phase at target_deg.
     Built 2026-08-29 after the 3-vote drift kill — a fixed-freq lock reads a
     snapshot on a moving phase (A-4 vs A-5: −6.19°/41 min); the servo makes the
@@ -211,7 +212,13 @@ def run_servo(port, target_deg, f_start, mesh_target=False, rate_deg=3.0):
             ph = float(ph)
             # FULL LOOP: refresh target from the mesh's collective phase, rate-limited
             # so a jumpy mesh can't yank the drive (freq is also clamped F_MIN..F_MAX).
-            if mesh_target and r:
+            if climb_ceil_hz and freq < climb_ceil_hz:
+                # COUPLED CLIMB: lead the coil by a fixed phase so the servo drives
+                # frequency steadily UPWARD (coil always just below target -> freq rises)
+                # until the good-zone ceiling. Overrides the echo's restoring pull so
+                # the climb actually wins. At the ceiling, hand off to mesh-coupling.
+                target_deg = (ph + 8.0) % 360.0
+            elif mesh_target and r:
                 mp = mesh_collective_phase(r)
                 if mp is not None:
                     d_t = ((mp - target_deg + 180.0) % 360.0) - 180.0
@@ -263,7 +270,8 @@ def main():
     if "--servo-mesh" in sys.argv:   # FULL LOOP: target = mesh collective phase (live, rate-limited)
         tgt = float(sys.argv[sys.argv.index("--servo-mesh")+1])   # initial/fallback target
         fs  = float(sys.argv[sys.argv.index("--f0")+1]) if "--f0" in sys.argv else 22030.0
-        sys.exit(run_servo(port, tgt, fs, mesh_target=True))
+        climb = float(sys.argv[sys.argv.index("--climb")+1]) if "--climb" in sys.argv else 0.0
+        sys.exit(run_servo(port, tgt, fs, mesh_target=True, climb_ceil_hz=climb))
     if "--servo" in sys.argv:
         tgt = float(sys.argv[sys.argv.index("--servo")+1])
         fs  = float(sys.argv[sys.argv.index("--f0")+1]) if "--f0" in sys.argv else 22030.0
