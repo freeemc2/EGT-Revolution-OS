@@ -271,7 +271,8 @@ def main():
         tgt = float(sys.argv[sys.argv.index("--servo-mesh")+1])   # initial/fallback target
         fs  = float(sys.argv[sys.argv.index("--f0")+1]) if "--f0" in sys.argv else 22030.0
         climb = float(sys.argv[sys.argv.index("--climb")+1]) if "--climb" in sys.argv else 0.0
-        sys.exit(run_servo(port, tgt, fs, mesh_target=True, climb_ceil_hz=climb))
+        mrate = float(sys.argv[sys.argv.index("--mesh-rate")+1]) if "--mesh-rate" in sys.argv else 3.0  # low = heavy smoothing = stable digital reference (entrainment)
+        sys.exit(run_servo(port, tgt, fs, mesh_target=True, rate_deg=mrate, climb_ceil_hz=climb))
     if "--servo" in sys.argv:
         tgt = float(sys.argv[sys.argv.index("--servo")+1])
         fs  = float(sys.argv[sys.argv.index("--f0")+1]) if "--f0" in sys.argv else 22030.0
