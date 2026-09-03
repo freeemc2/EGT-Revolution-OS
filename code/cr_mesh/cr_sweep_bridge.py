@@ -128,7 +128,32 @@ def run_lock(port, freq):
         s.write(b"x\n"); s.close(); print("\nlock released")
     return 0
 
-def run_servo(port, target_deg, f_start):
+def mesh_collective_phase(r):
+    """The mesh's own collective phase = arg Z, Z = sum_k |C(r_k)| e^{i phi_k}
+    over live node-phase keys (r from the single-source registry). This is the
+    target for the FULL systems<->coil loop: the coil is driven toward the mesh's
+    collective phase, while the coil beat feeds the nodes — two bodies coupled."""
+    import math, cmath
+    try:
+        from cr_rmap import get_r
+        from cr_voter import coupling_magnitude
+    except Exception:
+        return None
+    Z = 0j; W = 0.0
+    try:
+        for k in r.scan_iter("cadence:tworocks:node-phase:*"):
+            d = json.loads(r.get(k) or "{}")
+            ph = d.get("phase_deg"); hw = d.get("hwid")
+            if ph is None: continue
+            w = coupling_magnitude(get_r(hw, default=1))
+            Z += w * cmath.exp(1j * math.radians(ph)); W += w
+    except Exception:
+        return None
+    if W <= 0: return None
+    return math.degrees(cmath.phase(Z)) % 360.0
+
+
+def run_servo(port, target_deg, f_start, mesh_target=False, rate_deg=3.0):
     """Closed-loop phase servo: adjust drive frequency to HOLD phase at target_deg.
     Built 2026-08-29 after the 3-vote drift kill — a fixed-freq lock reads a
     snapshot on a moving phase (A-4 vs A-5: −6.19°/41 min); the servo makes the
@@ -184,6 +209,13 @@ def run_servo(port, target_deg, f_start):
             last_T = time.time()
             _, f, ph, mg = ln.split()
             ph = float(ph)
+            # FULL LOOP: refresh target from the mesh's collective phase, rate-limited
+            # so a jumpy mesh can't yank the drive (freq is also clamped F_MIN..F_MAX).
+            if mesh_target and r:
+                mp = mesh_collective_phase(r)
+                if mp is not None:
+                    d_t = ((mp - target_deg + 180.0) % 360.0) - 180.0
+                    target_deg = (target_deg + max(-rate_deg, min(rate_deg, d_t))) % 360.0
             err = ((ph - target_deg + 180.0) % 360.0) - 180.0   # wrapped error, ±180
             try:
                 iterlog.write(json.dumps({"t": round(time.time(), 2), "f": freq,
@@ -228,6 +260,10 @@ def main():
     port = sys.argv[sys.argv.index("--port")+1] if "--port" in sys.argv else "COM10"
     if "--lock" in sys.argv:
         sys.exit(run_lock(port, float(sys.argv[sys.argv.index("--lock")+1])))
+    if "--servo-mesh" in sys.argv:   # FULL LOOP: target = mesh collective phase (live, rate-limited)
+        tgt = float(sys.argv[sys.argv.index("--servo-mesh")+1])   # initial/fallback target
+        fs  = float(sys.argv[sys.argv.index("--f0")+1]) if "--f0" in sys.argv else 22030.0
+        sys.exit(run_servo(port, tgt, fs, mesh_target=True))
     if "--servo" in sys.argv:
         tgt = float(sys.argv[sys.argv.index("--servo")+1])
         fs  = float(sys.argv[sys.argv.index("--f0")+1]) if "--f0" in sys.argv else 22030.0

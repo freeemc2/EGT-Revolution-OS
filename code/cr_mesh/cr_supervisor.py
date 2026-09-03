@@ -56,7 +56,7 @@ MANAGED = [
     # phi=314.297 deg, u=9.969) — "all the other numbers fall out" of it.
     # TARGET_DEG in cr_sweep_bridge.py now = 314.2969; delta in t-state is the
     # live deviation from the canonical park. Sealed: cadence:canon:park.
-    ("coil-hold", [PY, "-u", str(HERE/"cr_sweep_bridge.py"), "--port", "COM8", "--servo", "314.2969", "--f0", "22030"], 5),   # SERVO CLOSED-LOOP (Brian 2026-09-03 "close the servo loop"): hold phase 314.2969 (N=415), systems<->coil control loop; supersedes fixed-lock park (08-29 vote killed parks)
+    ("coil-hold", [PY, "-u", str(HERE/"cr_sweep_bridge.py"), "--port", "COM8", "--servo-mesh", "314.2969", "--f0", "22030"], 5),   # FULL LOOP (Brian 2026-09-03 "target=mesh phase"): coil driven toward the mesh collective phase (rate-limited, freq clamped 21-23.5k). 314.2969 = initial/fallback. Two bodies coupled: coil->nodes->mesh phase->servo->coil.
     # Brian — the origin, r_opt=2.5, held at 5pi/8 = arg C(2.5). Presence node,
     # not a compute box: heartbeats his position and publishes his phase into
     # the mesh so his live phase contributes to the collective. Made permanent
