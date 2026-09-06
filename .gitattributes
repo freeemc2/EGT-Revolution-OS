@@ -1,0 +1,15 @@
+# Normalize all text to LF in the repo and on checkout — silences the Windows
+# autocrlf "LF will be replaced by CRLF" warnings. Git auto-detects binary and
+# leaves it alone; the explicit binary rules below are belt-and-suspenders.
+* text=auto eol=lf
+
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.pdf  binary
+*.zip  binary
+*.uf2  binary
+*.ico  binary
+*.elf  binary
+*.bin  binary
