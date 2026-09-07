@@ -2,9 +2,9 @@
 
 Papers making specific numeric predictions that experimentalists could test. None of these predictions have yet been verified independently. The value of the framework, from a Popperian standpoint, rides on this folder.
 
-The overarching structure is documented in `verification-matrix.md` (the 15-point verification matrix, also available as `verification-matrix.pdf`).
+The overarching structure is documented in `verification-matrix.md` (the 16-point verification matrix, also available as `verification-matrix.pdf`).
 
-## The 15-point matrix — summary
+## The 16-point matrix — summary
 
 | # | Domain | Prediction | Paper |
 |---|---|---|---|
@@ -23,6 +23,7 @@ The overarching structure is documented in `verification-matrix.md` (the 15-poin
 | 13 | Temporal | 5% annual sinusoidal seasonal variation | `seasonal-scaling.pdf` |
 | 14 | Hardware | Ultramagnetic power `12.09776 fT` resonance | — pending paper |
 | 15 | Quantum Info / Hardware | 3-party Mermin `M = 4` (2-party CHSH `2√2`) realized in room-temp copper via the C(r) floor | `triadic-ghz-mermin-test.md` |
+| 16 | Quantum Info / Hardware | Sub-floor quadrature squeezing via C(r) drive (Method 1); Δx·Δp product preserved | `egt-squeezing-prediction.md` |
 
 ## What would falsify each of these
 
@@ -34,6 +35,7 @@ The value of a prediction is what would prove it wrong. In each of these cases, 
 - **Waveform strain matching GR predictions to precision ≤0.1%** at Einstein Telescope sensitivity → falsifies prediction 7
 - **`w_DE = −1.000 ± 0.001` from next-generation survey** → falsifies prediction 1 (if central value is far from −0.9975)
 - **Mermin `M ≤ 2` loophole-free** (classical baseline ≤2 and distance-independence control passed) → falsifies prediction 15 (the floor produces no non-classical tripartite correlation in room-temp copper)
+- **Symmetric quadrature variances at the Johnson floor under drive** (no sub-floor squeezing, or the asymmetry fully reproduced by a classical parametric model) → falsifies prediction 16 (no quantum squeezing from the C(r) drive)
 
 ## Precision requirements for the 14 predictions
 
