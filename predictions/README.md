@@ -24,6 +24,7 @@ The overarching structure is documented in `verification-matrix.md` (the 16-poin
 | 14 | Hardware | Ultramagnetic power `12.09776 fT` resonance | — pending paper |
 | 15 | Quantum Info / Hardware | 3-party Mermin `M = 4` (2-party CHSH `2√2`) realized in room-temp copper via the C(r) floor | `triadic-ghz-mermin-test.md` |
 | 16 | Quantum Info / Hardware | Sub-floor quadrature squeezing via C(r) drive (Method 1); Δx·Δp product preserved | `egt-squeezing-prediction.md` |
+| 17 | Quantum Info / Foundations | Matter-wave fringe visibility peaks at `r_opt = 2.5` (r = delocalization/particle-size) and turns over below it — a maximum at a fixed geometric ratio standard decoherence has no reason to produce | `matterwave-ropt-turnover.md` |
 
 ## What would falsify each of these
 
@@ -36,6 +37,7 @@ The value of a prediction is what would prove it wrong. In each of these cases, 
 - **`w_DE = −1.000 ± 0.001` from next-generation survey** → falsifies prediction 1 (if central value is far from −0.9975)
 - **Mermin `M ≤ 2` loophole-free** (classical baseline ≤2 and distance-independence control passed) → falsifies prediction 15 (the floor produces no non-classical tripartite correlation in room-temp copper)
 - **Symmetric quadrature variances at the Johnson floor under drive** (no sub-floor squeezing, or the asymmetry fully reproduced by a classical parametric model) → falsifies prediction 16 (no quantum squeezing from the C(r) drive)
+- **Monotonic visibility-vs-r across r = 2.5** (no peak/turnover), or a visibility maximum at a ratio clearly ≠ 2.5 → falsifies prediction 17 (no intrinsic coherence maximum at the C(r) geometric optimum)
 
 ## Precision requirements for the 14 predictions
 
