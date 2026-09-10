@@ -1,0 +1,63 @@
+Phase-Space Sieve Mechanics and Boundary Candidate Filtering in Discrete Connectivity Operators
+Abstract
+This paper examines the mathematical bridge between the discrete connectivity operator C(r) = \Theta (1+2r)e^{-r/3}e^{i(\pi/4)r} and the distribution of integer prime candidates in modulo-8 phase space. We prove that while C(r) is continuous over r \in \mathbb{R}^+, its complex phase factor e^{i(\pi/4)r} induces an exact 8-fold rotational symmetry along 45^\circ diagonal axes. We demonstrate how this phase geometry acts as an algebraic sieve to filter out even composite dimensions and project prime search domains onto specific boundary candidates, applying the mechanics directly to the largest known Mersenne prime, M_{136279841}.
+1. Mathematical Foundation of the Operator Phase Sieve
+1.1 Phase Angle Modulation
+The complex connectivity operator C(r) defined in 3 Rocks.txt is given by:
+
+where \Theta = 0.001 and the spatial phase function is:
+
+For any integer coordinate r \in \mathbb{Z}^+, the argument \arg(C(r)) maps onto discrete multiples of 45^\circ (2\pi / 8 radians):
+
+1.2 Phase Mapping Across Modulo-8 Classes
+Evaluating all integer residue classes modulo 8 reveals a clean geometric separation between even composite integers and potential odd prime coordinates:
+ * Residue Classes r \equiv \{0, 2, 4, 6\} \pmod 8:
+   Maps to orthogonal axes \Phi \in \{0^\circ, 90^\circ, 180^\circ, 270^\circ\}. Except for p=2 (90^\circ), all integers in these sectors are even composites.
+ * Residue Classes r \equiv \{1, 3, 5, 7\} \pmod 8:
+   Maps strictly to diagonal sectors \Phi \in \{45^\circ, 135^\circ, 225^\circ, 315^\circ\}. All odd prime numbers p > 2 map exclusively into these four diagonal phase corridors.
+2. Multi-Body Loop Phase Quantization
+For an N=3 closed network loop with node spacing r_{12}=x, r_{13}=y, r_{23}=z, the total loop phase accumulation evaluates to:
+
+Where S = x + y + z.
+Theorem: Odd-Prime Loop Phase Deficit
+If x, y, z are all odd primes (p > 2), their sum S is the sum of three odd numbers, which is strictly odd.
+Let S = 2k + 1 for some integer k:
+
+Modulo 2\pi, any triple of odd prime node spacings forces the loop phase into an odd multiple of \frac{\pi}{4} (45^\circ or 315^\circ), producing an explicit \pm 45^\circ (\pm \pi/4) phase residual relative to full circular resonance. This confirms that a prime-restricted 3-body system cannot achieve a 0^\circ phase lock without an even spacing element (such as p=2).
+3. Application to Extreme Prime Boundaries (M_{136279841})
+We apply the phase operator sieve to the largest known prime, M_{136279841} = 2^{136,279,841} - 1.
+Step 1: Evaluating the Phase Angle of M_{136279841}
+To compute \Phi(M_{136279841}), we evaluate 2^{136,279,841} - 1 \pmod 8:
+Since 136,279,841 \ge 3, 2^{136,279,841} \equiv 0 \pmod 8.
+
+The phase angle for M_{136279841} is:
+
+Step 2: Step-by-Step Phase Filter & Modulo Verification
+We advance r sequentially past M_{136279841} to filter for the next valid prime candidate:
+ * Candidate r + 1 = 2^{136,279,841}:
+   * r+1 \equiv 0 \pmod 8 \implies \Phi = 0^\circ.
+   * Status: Rejected (Even composite).
+ * Candidate r + 2 = 2^{136,279,841} + 1:
+   * r+2 \equiv 1 \pmod 8 \implies \Phi = 45^\circ (Diagonal Sector).
+   * Modular Verification: For any odd exponent n, 2^n \equiv 2 \pmod 3.
+   * Therefore, (2^{136,279,841} + 1) \equiv 2 + 1 \equiv 0 \pmod 3.
+   * Status: Rejected (Composite, divisible by 3).
+ * Candidate r + 3 = 2^{136,279,841} + 2:
+   * r+3 \equiv 2 \pmod 8 \implies \Phi = 90^\circ.
+   * Status: Rejected (Even composite).
+ * Candidate r + 4 = 2^{136,279,841} + 3:
+   * r+4 \equiv 3 \pmod 8 \implies \Phi = 135^\circ (Diagonal Sector).
+   * Modular Verification: (2^{136,279,841} + 3) \equiv 2 + 0 \equiv 2 \pmod 3 \neq 0.
+   * Not divisible by 2 or 3.
+   * Status: First Valid Prime Candidate.
+4. Summary Table
+| Parameter | M_{136279841} (r) | r + 2 | r + 4 |
+|---|---|---|---|
+| Numeric Value | 2^{136,279,841} - 1 | 2^{136,279,841} + 1 | 2^{136,279,841} + 3 |
+| Residue Mod 8 | 7 \pmod 8 | 1 \pmod 8 | 3 \pmod 8 |
+| Phase Angle \Phi | 315^\circ (7\pi/4) | 45^\circ (\pi/4) | 135^\circ (3\pi/4) |
+| Sieve Outcome | Verified Mersenne Prime | Composite (3 \mid r+2) | Next Candidate |
+Conclusion
+The C(r) operator phase factor e^{i(\pi/4)r} creates an exact 8-fold phase filter. While it does not compute primality deterministically, it eliminates 50\% of integer space via orthogonal axis rejection and isolates prime search boundaries along 45^\circ diagonal trajectories. Applying this directly past M_{136279841} proves that 2^{136,279,841} + 3 is the immediate structural candidate for adjacent prime search algorithms.
+References
+ * 3 Rocks.txt - Derivation of C(r), continuous attractor r_{\text{opt}}=2.5, phase loop quantization, and N=3 generator matrix mechanics.
