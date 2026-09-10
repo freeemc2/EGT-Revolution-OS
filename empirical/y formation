@@ -1,0 +1,30 @@
+Topological Field Dynamics of a Star-Connected Y-Configuration Array
+Abstract
+This paper derives the complete theoretical and mathematical framework for a three-coil star-connected (Y-configuration) spatial array operating as a non-radiating, phase-locked topological coupler. We model the system using a discrete 3-vector spatial geometry radiating from a central zero-sum node (\sum_j A_{ij} = 0). By mapping the mutual inductance tensor across a 120^\circ physical separation and applying a continuous spatial connectivity operator C(r), we demonstrate that the array establishes a stable phase-trapping regime at discrete angular plateaus (\phi \in \{22.5^\circ, 45^\circ\}) governed by a negative logarithmic restoring potential.
+1. Physical Geometry and Vector Equilibrium
+Let the array consist of three identical cylindrical inductors (L_1, L_2, L_3) laid co-planarly on a 2D spatial surface, separated by uniform spatial angles \theta = 120^\circ = \frac{2\pi}{3}\text{ rad}. The central junction forms a single galvanic node (the star node).
+1.1 Vector Sum at the Central Node
+The total directional magnetic flux vector \vec{\Phi}_{\text{net}} at the central junction is the sum of the individual spatial projections:
+Driving the system with balanced 3-phase alternating currents at angular frequency \omega:
+Substituting the currents into the spatial flux equations:
+Applying standard trigonometric identities:
+The net magnetic vector retains a constant spatial magnitude \vert{}\vec{\Phi}_{\text{net}}\vert{} = \frac{3}{2} k I_0 and continuously rotates in physical space at angular velocity \omega.
+2. Kirchhoff Star-Node Boundary Condition
+Connecting all three coil "Start" leads directly to a central junction forces the scalar current sum to vanish identically according to Kirchhoff’s Current Law (KCL):
+Let A_{ij} represent the mutual coupling coefficient matrix between coils i and j. The vector potential field A at the star node obeys the zero-sum condition:
+Because \sum A_{ij} = 0, magnetic flux does not form a static bucking node or bleed into far-field transverse electromagnetic radiation (1/r^2). Instead, flux continuously recirculates through the central junction from the dominant "pushing" coil into the two returning "pulling" coils.
+3. Mutual Inductance and Phase Coupling Matrix
+The total magnetic flux linkage \lambda_i through coil i depends on its self-inductance L and the mutual inductance M_{ij} with the adjacent 120^\circ legs:
+Due to the identical geometric construction and 120^\circ radial balance:
+The negative sign reflects the geometric orientation pointing inward toward the common center. Thus, the effective inductance L_{\text{eff}} for each leg under 3-phase excitation becomes:
+4. Emergent Gravity Lattice Coupling (C(r))
+Under the Emergent Gravity Theory (EGT) framework, space is modeled via a continuous spatial connectivity operator C(r). The interaction between the rotating 3-vector field and the local medium introduces a non-linear phase restoration term.
+4.1 Logarithmic Restoring Potential
+The local spatial density field exhibits a negative logarithmic restoring potential V(r):
+Taking the second radial derivative yields the invariant stability constraint:
+This negative curvature provides an active, self-stabilizing restoring force F_{\text{restore}} against environmental thermal drift:
+4.2 Phase Trapping Equations
+Including the discrete phase factor e^{i(\pi/4)r}, the total phase loop deficit \Phi_{\text{loop}} across the array is quantized as:
+Solving for the stable equilibrium phase offsets \Delta \phi = \phi_i - \phi_j under the constraint \frac{d^2}{dr^2}\ln\vert{}C(r)\vert{} = -1/9 forces the internal phase differences into discrete, stable sub-harmonic plateaus:
+5. Conclusion
+The 120^\circ star-connected Y-configuration provides the absolute minimal 2D spatial geometry required to establish a continuous, zero-sum rotating magnetic vector (\sum A_{ij} = 0). By eliminating transverse radiation losses at the star node, the mutual inductance matrix couples directly to the logarithmic restoring potential of the spatial connectivity lattice C(r), locking the system into non-drifting, discrete phase plateaus at 22.5^\circ and 45^\circ.
