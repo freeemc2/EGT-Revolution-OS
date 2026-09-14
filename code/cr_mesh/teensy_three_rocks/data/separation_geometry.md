@@ -19,3 +19,15 @@ Pull coil 2's drive lead off its 220 Ω; pin 2 keeps toggling with NO coil attac
 - A1 → floor (~0.004): the flat leg is coil-mediated → real, proceed to S2/S3 on that leg with the seal's rules.
 - A1 stays ~0.08: board/ground crosstalk pedestal → the flat leg is mundane; only the 1/d² leg stands.
 Reference: pin 4 driving air (no coil, no load) earlier read A1 ≈ 0.015–0.020 — a lower bound on board crosstalk.
+
+## CONTROL RESULT (12:44) — mundane branch, decisively
+Coil 2's lead pulled, pin 2 toggling with no coil: **A0 0.434 / 0.655, A1 1.211 / 1.834** (7878 / 12000 Hz),
+vs coil attached at S0: A0 0.205 / 0.308, A1 0.084 / 0.125. Removing the coil made both runners read MORE —
+A1 by ~15x. The runners pick up pin 2's drive wiring directly (unloaded 3.3 V square wave on that lead),
+not only the coil's field. The flat A1 leg was that pickup — a coil-position-independent pedestal.
+
+**Status: S0 and S1 are VOID; the separation series is MOOT until the wiring passes the null.**
+Pre-registered pass criterion for the rewire (before it is done): with coil 2 disconnected and pin 2 toggling,
+A0 and A1 must read <= ~3x floor (~0.012). Only then reconnect, reset coils to 8", and re-take S0.
+Likely fix: route pin 2's drive lead away from the A1/A0 runner wiring (localize live by moving the loose lead);
+verify runner north ends are solidly on GND.
