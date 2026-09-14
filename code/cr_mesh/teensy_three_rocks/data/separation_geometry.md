@@ -31,3 +31,20 @@ Pre-registered pass criterion for the rewire (before it is done): with coil 2 di
 A0 and A1 must read <= ~3x floor (~0.012). Only then reconnect, reset coils to 8", and re-take S0.
 Likely fix: route pin 2's drive lead away from the A1/A0 runner wiring (localize live by moving the loose lead);
 verify runner north ends are solidly on GND.
+
+## LIVE LOCALIZATION (13:0x) — lead proximity is only part of it
+Pin 2 toggling, coil 2 disconnected, Brian moved the loose lead: A1 swung 0.58 <-> 1.32 with lead position
+(proximity real, routing fixes that part). But with the lead AWAY, A1 still 0.58 and A0 0.32, unaffected
+by lead position -> a pedestal ~50x the pass target that is NOT the lead. Cause: an OPEN, unloaded pin swings
+full rail with ~ns edges and radiates far more than a loaded pin; attaching the coil slows the edge, which is
+why the coil made readings DROP. The no-coil control was therefore a HARSHER condition than the real run —
+the wrong null.
+
+## CORRECTED CONTROL — pre-registered before it runs
+Dummy load: replace coil 2 with a resistor (match coil 2's winding R if metered; else 220 R noted as mismatch)
+from the 220 R's far end to GND; route pin-2 leads away from runner wiring. Same current, same edges, no field.
+- PASS: A0 and A1 <= ~3x floor (~0.012) -> real coil runs are clean; pickup existed only on an open pin.
+- FAIL: A0/A1 still ~0.2 / 0.08 -> pedestal present during real runs; separation data contaminated until the
+  sense side is hardened (low-value shunt from each A-pin to GND so the node is low-Z; twist drive pairs;
+  keep drive and runner leads apart; verify runner north ends solidly on GND).
+S0/S1 remain VOID pending PASS.
