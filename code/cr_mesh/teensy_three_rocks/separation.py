@@ -1,12 +1,14 @@
-# usage: separation.py <station> [distance_note]
+# usage: separation.py <station> [note] [distance_inches]   (D = 2.5 in coil OD; r = d/D)
 #   Sealed pair-separation protocol (journal 2026-08-30), bench-scale:
 #   coil 2 (pin 2, K0) driven, coil 1's runner (A0) read [+ A1 recorded], interleaved ON/OFF
 #   differential x5 at 7878 and 12000 Hz. Saves sep_<station>.json; compares every station
 #   to S0 with the sealed 2-sigma rule and prints the running verdict HOLDS / FALSIFIED / MOOT.
-import serial, time, statistics as st, json, sys, os, glob
+import serial, time, statistics as st, json, sys, os, glob, math
 
 station = sys.argv[1] if len(sys.argv) > 1 else "S0"
 note = sys.argv[2] if len(sys.argv) > 2 else ""
+d_in = float(sys.argv[3]) if len(sys.argv) > 3 else None
+COIL_D = 2.5
 here = os.path.dirname(os.path.abspath(__file__))
 FREQS = [7878, 12000]
 PAIRS = 5
@@ -37,7 +39,7 @@ time.sleep(0.4)
 print("firmware:", cmd("P"), "|", cmd("C 0 1"))
 ON = ["M 1", "K 0"]          # coil 2 (pin 2) alone
 OFF = ["M 0"]
-data = {"station": station, "note": note, "ts": time.strftime("%Y-%m-%d %H:%M:%S"), "freqs": {}}
+data = {"station": station, "note": note, "d_in": d_in, "ts": time.strftime("%Y-%m-%d %H:%M:%S"), "freqs": {}}
 for f in FREQS:
     diffs0, diffs1 = [], []
     for k in range(PAIRS):                       # interleaved: on, off, on, off ...
@@ -76,21 +78,36 @@ if os.path.exists(base):
             cells.append(f"{m:7.3f} x{ratio:5.2f} {z:+7.1f}")
         print(f"{d['station']:10} {d['note'][:16]:16} | " + " | ".join(cells))
         verdict_rows.append((d["station"], [d["freqs"][str(f)]["A0_mean"] for f in FREQS], zs))
-    print("pre-registered (CORRECTED 2026-09-14 13:0x, canon): |C(r)|=(1+2r)e^(-r/3), r=d/D (D=2.5in), PEAK at r_opt=2.5 -> d=6.25in.")
-    print("  vs 8in: 2in x0.78 | 4in x0.97 | 6.25in x1.02 | 12in x0.84 | 18in x0.55   (near-field 1/d^2: x16 | x4 | x1.6 | x0.44 | x0.20)")
-    print("  discriminator = PEAK at ~6.25in (non-monotonic) vs monotonic decay; sharpest test = 8in -> 2in (C(r) x0.78 vs near-field x16)")
-    # precondition
+    print("pre-registered (canon, 2026-09-14): |C(r)|=(1+2r)e^(-r/3), r=d/D, D=2.5in, PEAK at r_opt=2.5 -> 6.25in;")
+    print("  alternative: near-field 1/d^2. Sealed HOLDS/FALSIFIED/MOOT wording applies to the B_res FLOOR claim at building")
+    print("  scale; on the bench the question is SHAPE: canon (peak at ~6.25in) vs near-field (monotonic).")
     fl0 = b["freqs"][str(FREQS[0])]["floor"]; m00 = b["freqs"][str(FREQS[0])]["A0_mean"]
     if m00 < 3 * max(fl0, 1e-6):
-        print("VERDICT: MOOT — S0 coupling not above noise (P-SEP3)")
+        print("VERDICT: MOOT - S0 coupling not above noise (P-SEP3)")
     else:
-        beyond = [r for r in verdict_rows if r[0] != "S0" and all(z < -2 for z in r[2])]
-        within = [r for r in verdict_rows if r[0] != "S0" and all(abs(z) <= 2 for z in r[2])]
-        if len(verdict_rows) == 1:
-            print("VERDICT: S0 recorded — awaiting stations")
-        elif beyond and len(beyond) == len(verdict_rows) - 1:
-            print("VERDICT (so far): FALSIFIED — every station beyond 2-sigma below S0 (P-SEP2, decay with distance)")
-        elif within and len(within) == len(verdict_rows) - 1:
-            print("VERDICT (so far): HOLDS — every station within 2-sigma of S0 (P-SEP1)")
+        def Cmag(r): return (1 + 2 * r) * math.exp(-r / 3.0)
+        d0 = b.get("d_in")
+        print()
+        print(f"{'station':8} {'d_in':>5} | " + " | ".join(f"{f}Hz meas  canon  nearf  closer" for f in FREQS))
+        rows = []
+        for fp in files:
+            d = json.load(open(fp)); dd = d.get("d_in")
+            if dd is None or d0 is None:
+                print(f"{d['station']:8} {'n/a':>5} | (no distance recorded - ratios only)"); continue
+            can = Cmag(dd / COIL_D) / Cmag(d0 / COIL_D); nf = (d0 / dd) ** 2
+            cells = []; meas = []
+            for f in FREQS:
+                fs = str(f); m = d["freqs"][fs]["A0_mean"] / b["freqs"][fs]["A0_mean"]; meas.append(m)
+                closer = "canon" if abs(math.log(max(m,1e-9)/can)) < abs(math.log(max(m,1e-9)/nf)) else "near-f"
+                cells.append(f"x{m:5.2f} x{can:5.2f} x{nf:5.2f}  {closer:6}")
+            print(f"{d['station']:8} {dd:5.2f} | " + " | ".join(cells))
+            rows.append((dd, st.mean(meas)))
+        rows.sort()
+        if len(rows) >= 3:
+            vals = [v for _, v in rows]; k = vals.index(max(vals))
+            if 0 < k < len(vals) - 1:
+                print(f"SHAPE: NON-MONOTONIC - peak at d={rows[k][0]:.2f}in (canon-shaped; canon peak 6.25in)")
+            else:
+                print("SHAPE: MONOTONIC across stations (near-field-shaped; no interior peak)")
         else:
-            print("VERDICT (so far): MIXED — see z per station; more stations needed")
+            print("SHAPE: need >= 3 stations with distances for the peak check")
