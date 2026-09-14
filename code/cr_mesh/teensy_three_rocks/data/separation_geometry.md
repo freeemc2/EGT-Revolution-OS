@@ -48,3 +48,23 @@ from the 220 R's far end to GND; route pin-2 leads away from runner wiring. Same
   sense side is hardened (low-value shunt from each A-pin to GND so the node is low-Z; twist drive pairs;
   keep drive and runner leads apart; verify runner north ends solidly on GND).
 S0/S1 remain VOID pending PASS.
+
+## ALIGNMENT CORRECTION (Brian's call, 13:0x) — the C(r) branch was mis-stated
+I pre-registered "distance-independent C(r) -> x1.0 at every station." That is NOT the canon formula.
+Canon (egt_canonical_anchor): C(r) = lambda(1+2r)e^(-r/3)e^(i phi), r = d/D dimensionless, r_opt = 2.5.
+|C(r)| PEAKS at r = 2.5 (d = 6.25" for D = 2.5") and decays as e^(-r/3) beyond.
+
+| d | r | |C(r)| | ratio vs 8" | near-field 1/d^2 vs 8" |
+|---|---|---|---|---|
+| 2" | 0.8 | 1.99 | x0.78 | x16 |
+| 4" | 1.6 | 2.46 | x0.97 | x4 |
+| 6.25" | 2.5 | 2.61 | x1.02 (peak) | x1.6 |
+| 8" | 3.2 | 2.55 | x1.00 | x1.00 |
+| 12" | 4.8 | 2.14 | x0.84 | x0.44 |
+| 18" | 7.2 | 1.40 | x0.55 | x0.20 |
+
+Corrected discriminator: a PEAK near 6.25" (non-monotonic) vs monotonic decay. Sharpest single test:
+8" -> 2": C(r) predicts x0.78, near-field predicts x16.
+The 08-30 sealed "flat across buildings" is the B_res FLOOR coupling in the deep tail — a different regime.
+Three rocks: C_total = |C(2.5)| Sum_k e^(i phi_k); symmetric -> 0 (null), 120deg stagger -> 3 (full) — at the CENTROID,
+not at in-bore runners. All of this pre-registered before any clean (post-control2) data exists.

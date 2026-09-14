@@ -76,7 +76,9 @@ if os.path.exists(base):
             cells.append(f"{m:7.3f} x{ratio:5.2f} {z:+7.1f}")
         print(f"{d['station']:10} {d['note'][:16]:16} | " + " | ".join(cells))
         verdict_rows.append((d["station"], [d["freqs"][str(f)]["A0_mean"] for f in FREQS], zs))
-    print("pre-registered: near-field ~(d0/d)^3 -> x0.12 @2x, x0.016 @4x | distance-independent C(r) -> x1.0 at every station")
+    print("pre-registered (CORRECTED 2026-09-14 13:0x, canon): |C(r)|=(1+2r)e^(-r/3), r=d/D (D=2.5in), PEAK at r_opt=2.5 -> d=6.25in.")
+    print("  vs 8in: 2in x0.78 | 4in x0.97 | 6.25in x1.02 | 12in x0.84 | 18in x0.55   (near-field 1/d^2: x16 | x4 | x1.6 | x0.44 | x0.20)")
+    print("  discriminator = PEAK at ~6.25in (non-monotonic) vs monotonic decay; sharpest test = 8in -> 2in (C(r) x0.78 vs near-field x16)")
     # precondition
     fl0 = b["freqs"][str(FREQS[0])]["floor"]; m00 = b["freqs"][str(FREQS[0])]["A0_mean"]
     if m00 < 3 * max(fl0, 1e-6):
