@@ -1,5 +1,15 @@
 # THREE ROCKS — COMPLETE BOARD PINOUT (Teensy 4.1) — 2026-09-15
 
+## ★★ DRIVE-PATH BUG FOUND (Brian observation 2026-09-15): 220R jumps straight to a GROUND wire.
+## Brian sees: drive pin -> breadboard -> 220R -> ground wire -> GND, i.e. pin -> 220R -> GND with the COIL
+## WINDING NOT in the current path. That shorts the winding / bypasses the coil -> no field -> no coupling.
+## ANSWER to Brian's question: the 3.3V drive is CORRECT (GPIO HIGH = 3.3V) and is NOT suppressed by any 10K.
+## The 10K's are SENSE-side bias ONLY. Drive current is limited by the 220R, and the winding MUST be in series:
+##     drive pin --- 220R --- winding NORTH ;  winding SOUTH --- GND      (winding is the ONLY path to GND here)
+## FIX: at the far end of each 220R, the ONLY connection is the coil winding NORTH. Remove any ground jumper at
+## that node. The winding SOUTH is the sole ground. C2/C3 coupled (their windings ARE in-path); C1 is dead
+## (the runner-pin16/drive-pin4 coil) -> check C1 first for the stray ground jumper at its 220R far end.
+
 ## ★ RUNNER MAP CORRECTED (Brian 2026-09-15): sense pins are wired in REVERSE coil order.
 ##   pin16 (A2) -> C1 runner   |   pin15 (A1) -> C2 runner   |   pin14 (A0) -> C3 runner
 ## Diagnostic re-read under this map: driving pin2 lights C3's runner (A0) strongest, pin3 lights C2's (A1).
