@@ -19,13 +19,15 @@ each sense pin is: 3V3 -> 10K -> node -> (10K to GND) || (runner ~1 ohm to GND).
 
 ## PER-COIL WIRING (all three identical) — DRIVE and SENSE are separate wires
 Drive (winding is driven):   DRIVE_PIN --- 220R --- winding NORTH ;  winding SOUTH --- GND
-Sense  (runner is read):     runner SOUTH --- A-pin (+ 10K/10K bias above) ;  runner NORTH --- GND
+Sense  (runner is read):     runner SOUTH --- A-pin (+ 10K/10K bias) ;  runner NORTH --- 100R --- GND bus
+   (Brian 2026-09-15: the 100R is a SERIES element in the runner's north ground return, NOT a shunt on the A-pin.
+    The 10K/10K bias is at the A-pin on the SOUTH end; opposite ends of the runner, so the 100R does not load the bias.)
 
 | Coil | DRIVE pin | 220R | winding N / S | SENSE pin (ADC) | runner S / N | bias top 10K | bias bot 10K |
 |------|-----------|------|---------------|-----------------|--------------|--------------|--------------|
-| C1   | pin 2     | 220R | N->220R->pin2, S->GND | A0 = pin14 (adc0) | S->A0, N->GND | 3V3->A0 | A0->GND |
-| C2   | pin 3     | 220R | N->220R->pin3, S->GND | A1 = pin15 (adc1) | S->A1, N->GND | 3V3->A1 | A1->GND |
-| C3   | pin 4     | 220R | N->220R->pin4, S->GND | A2 = pin16 (adc0/adc1) | S->A2, N->GND | 3V3->A2 | A2->GND |
+| C1   | pin 2     | 220R | N->220R->pin2, S->GND | A0 = pin14 (adc0) | S->A0, N->100R->GND | 3V3->A0 | A0->GND |
+| C2   | pin 3     | 220R | N->220R->pin3, S->GND | A1 = pin15 (adc1) | S->A1, N->100R->GND | 3V3->A1 | A1->GND |
+| C3   | pin 4     | 220R | N->220R->pin4, S->GND | A2 = pin16 (adc0/adc1) | S->A2, N->100R->GND | 3V3->A2 | A2->GND |
 
 Firmware indices: K0=C1(pin2/A0), K1=C2(pin3/A1), K2=C3(pin4/A2). `DRIVE_PINS={2,3,4}`, `SENSE_PINS={A0,A1,A2}` (flashed).
 
@@ -39,14 +41,12 @@ Firmware indices: K0=C1(pin2/A0), K1=C2(pin3/A1), K2=C3(pin4/A2). `DRIVE_PINS={2
 - 3 x 220R  — drive series, one per drive pin (pin2, pin3, pin4).
 - 3 x 10K   — bias top, 3V3 -> A0 / A1 / A2.
 - 3 x 10K   — bias bottom, A0 / A1 / A2 -> GND.
-- (my v2's "100R A-pin->GND shunt" is NOT part of the OG topology — see conflict below.)
+- 3 x 100R  — series in each runner's NORTH ground return (runner north -> 100R -> GND bus). Per Brian's build.
 
-## ⚠ TWO THINGS TO RESOLVE AGAINST THE PHYSICAL BOARD (these change the sheet)
-1. **100R shunts vs 10K/10K bias.** Earlier today I had you add 100R from each A-pin to GND (they dropped the
-   floor). The OG coil uses 10K/10K mid-rail bias instead. If BOTH are on a pin, the 100R swamps the 10K bias
-   (node sits at ~3V3 * 100/10100 ~ 0.03 V, not 1.65 V) — bias defeated, and 3V3 pushes ~33 mA through the
-   100R continuously. Tell me which is physically on the board now: 100R shunts, 10K/10K bias, or both.
-2. **Drive topology.** OG teensy_sweep (after the 2026-08-23 swap) drives the RUNNER (pin3->220R->runner->GND)
+## RESOLVED / OPEN
+1. **RESOLVED (Brian 2026-09-15):** the 100R is in the runner's north ground return, 10K/10K bias is on the
+   A-pin (south) — opposite ends, no conflict. Bias intact. My earlier "shunt on the A-pin" reading was wrong.
+2. **STILL OPEN — Drive topology.** OG teensy_sweep (after the 2026-08-23 swap) drives the RUNNER (pin3->220R->runner->GND)
    and senses the PAIR wires. three_rocks firmware drives the WINDING and senses the RUNNER — the OPPOSITE
    roles. "Set up like the OG coil" could mean you wired runner-driven. If so, C1/C2 happening to look right is
    luck of symmetry and C3 is the tell. Confirm: on the bench, is the 220R feeding the WINDING or the RUNNER?
@@ -57,9 +57,9 @@ Power OFF, Teensy USB unplugged, meter in ohms:
      rail is touching a drive line — that is the leak. Most likely on C3 (pin4) given the diagnostic.
 - b. Each DRIVE pin to GND: ~221 ohm (220R + ~1 ohm winding). C3/pin4 reading OPEN = its drive never reaches
      the winding (matches pin4 radiating, A2 dead).
-- c. Each A-pin to GND: with 10K/10K = ~5K (two 10K in parallel, runner ~1 ohm dominates -> actually ~1 ohm);
-     with 100R shunt = ~100 ohm. Whatever it is, all three A-pins should read the SAME. If A2 differs, that is
-     the C3 sense fault.
+- c. Each A-pin to GND: 10K bias-bottom in parallel with (runner ~1 ohm + 100R = ~101 ohm) => ~100 ohm.
+     All three A-pins should read the SAME (~100 ohm). If A2 differs, that is the C3 sense fault (runner open,
+     100R missing/wrong, or bias leg off).
 - d. Each A-pin to its own DRIVE pin (A0-pin2, A1-pin3, A2-pin4): must be **OPEN**. A short here means a runner
      shares a node with a drive line — the exact "3.3V through drive wires" path, since the A-pin carries the
      3V3 bias. Check A2-to-pin4 first.
