@@ -1,0 +1,185 @@
+{
+ "test": "three-rock superposition switch \u2014 FULL RAWS (per-runner phasors + per-rep phase-repeat)",
+ "freq": 7878,
+ "reps": 4,
+ "channel_note": "ADC1 dead; each runner read sequentially on ADC0 vs the shared continuous lock-in reference (phase accumulator never reset between reads).",
+ "phasor_format": "[magnitude, phase_deg] referenced to shared drive clock",
+ "single_coil_median": 0.567,
+ "per_rep": [
+  {
+   "rep": 1,
+   "singles": [
+    0.568,
+    0.203,
+    0.655
+   ],
+   "sym": [
+    [
+     0.145,
+     105
+    ],
+    [
+     0.17,
+     104
+    ],
+    [
+     0.188,
+     104
+    ]
+   ],
+   "stag": [
+    [
+     0.894,
+     261
+    ],
+    [
+     0.809,
+     340
+    ],
+    [
+     0.747,
+     353
+    ]
+   ],
+   "sym_S": 0.503,
+   "stag_S": 1.839,
+   "a0_phase_repeat_deg": 0.4,
+   "sym_S_recompute": 0.503,
+   "stag_S_recompute": 1.849
+  },
+  {
+   "rep": 2,
+   "singles": [
+    0.567,
+    0.203,
+    0.656
+   ],
+   "sym": [
+    [
+     0.147,
+     104
+    ],
+    [
+     0.172,
+     105
+    ],
+    [
+     0.189,
+     105
+    ]
+   ],
+   "stag": [
+    [
+     0.894,
+     261
+    ],
+    [
+     0.807,
+     340
+    ],
+    [
+     0.747,
+     354
+    ]
+   ],
+   "sym_S": 0.508,
+   "stag_S": 1.837,
+   "a0_phase_repeat_deg": 0.3,
+   "sym_S_recompute": 0.508,
+   "stag_S_recompute": 1.839
+  },
+  {
+   "rep": 3,
+   "singles": [
+    0.568,
+    0.202,
+    0.655
+   ],
+   "sym": [
+    [
+     0.145,
+     104
+    ],
+    [
+     0.172,
+     105
+    ],
+    [
+     0.189,
+     105
+    ]
+   ],
+   "stag": [
+    [
+     0.894,
+     261
+    ],
+    [
+     0.811,
+     340
+    ],
+    [
+     0.747,
+     353
+    ]
+   ],
+   "sym_S": 0.505,
+   "stag_S": 1.844,
+   "a0_phase_repeat_deg": 0.2,
+   "sym_S_recompute": 0.506,
+   "stag_S_recompute": 1.851
+  },
+  {
+   "rep": 4,
+   "singles": [
+    0.567,
+    0.203,
+    0.656
+   ],
+   "sym": [
+    [
+     0.146,
+     105
+    ],
+    [
+     0.169,
+     105
+    ],
+    [
+     0.19,
+     105
+    ]
+   ],
+   "stag": [
+    [
+     0.894,
+     261
+    ],
+    [
+     0.81,
+     340
+    ],
+    [
+     0.748,
+     353
+    ]
+   ],
+   "sym_S": 0.505,
+   "stag_S": 1.844,
+   "a0_phase_repeat_deg": 0.1,
+   "sym_S_recompute": 0.505,
+   "stag_S_recompute": 1.851
+  }
+ ],
+ "medians": {
+  "symmetric_Sigma": 0.505,
+  "stagger120_Sigma": 1.84,
+  "sym_ratio": 0.89,
+  "stag_ratio": 3.25,
+  "contrast": 3.64,
+  "phase_repeat_max_deg": 0.39
+ },
+ "mechanism_note": "HONEST: symmetric-mode null is per-runner AMPLITUDE suppression (each ~0.15 vs single 0.567) with runners IN-PHASE (~104deg) so they add to ~0.50 \u2014 NOT three equal phasors cancelling by roots-of-unity phase. Stagger-mode runners are ENHANCED (0.75-0.89) and phase-spread (261/340/353) summing to 1.84. The |Sigma| contrast (3.6x) is real and repeatable; the driving distinction is amplitude modulation of each coil's coupling by the drive phase pattern, not textbook phasor cancellation. Flagged for the vote.",
+ "seal": "cadence:tworocks:sealed-superposition-switch-2026-09-15",
+ "source_run": "scratchpad superpos.py, task bd2tw1e4n, 2026-09-15"
+}
