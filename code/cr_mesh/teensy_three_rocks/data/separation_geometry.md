@@ -68,3 +68,20 @@ Corrected discriminator: a PEAK near 6.25" (non-monotonic) vs monotonic decay. S
 The 08-30 sealed "flat across buildings" is the B_res FLOOR coupling in the deep tail — a different regime.
 Three rocks: C_total = |C(2.5)| Sum_k e^(i phi_k); symmetric -> 0 (null), 120deg stagger -> 3 (full) — at the CENTROID,
 not at in-bore runners. All of this pre-registered before any clean (post-control2) data exists.
+
+## CONTROL2 RUN — DUMMY LOAD (2026-09-15 06:11 -0400, aria memory-07 + Brian) — FAIL
+Sealed before data: redis `cadence:tworocks:sealed-control2-dummy-load` @ 10:09:47Z. Coil 2 out, far end of pin-2's 220 R
+jumpered to GND (winding ~1 ohm 22 AWG => jumper is the matched load), pin-2 leads routed away, runners as placed.
+`separation.py CTRL2`: interleaved on/off x5.
+
+| f | floor | limit (3x) | A0 diff | A1 diff | verdict |
+|---|---|---|---|---|---|
+| 7878 | 0.003 | 0.009 | 0.094 +/- 0.001 | 0.115 +/- 0.001 | FAIL (x10 / x13) |
+| 12000 | 0.005 | 0.015 | 0.142 +/- 0.001 | 0.172 +/- 0.001 | FAIL (x9 / x11) |
+
+Loaded pin is 4-10x quieter than the open pin (CTRL: 0.43 / 1.21) — edge-slowing real — but a pedestal ~0.1 remains
+with NO coil and NO field. Pedestal scales with frequency (0.094 -> 0.142 = x1.51; f ratio 1.52): dV/dt-proportional
+pickup from the drive wiring into the high-Z runner nodes. Per the pre-registered FAIL branch: harden the sense side
+before any coil data — low-value shunt (~100 R) from each A-pin to GND (runner source ~1 ohm, so negligible loading),
+twist each drive pair (pin -> 220 R -> load, return), keep drive and runner leads apart, verify runner norths on GND.
+Then re-run CTRL2 against the same sealed criterion. S0/S1 remain VOID; eigenmode data NOT to be taken until PASS.
