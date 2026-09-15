@@ -215,7 +215,10 @@ void loop() {
       Serial.print("R PAIR "); Serial.print(pairA); Serial.print(" "); Serial.println(pairB);
     }
     else if (cmd == "V") {
-      applyMode(0); measureDC();
+      streaming = false; applyMode(0);
+      tick.end();
+      measureDC();
+      tick.begin(isr, 1000000.0f / FS);
       Serial.print("R DC "); Serial.print(dcOffset[0]); Serial.print(" ");
       Serial.print(dcOffset[1]); Serial.print(" "); Serial.println(dcOffset[2]);
     }
