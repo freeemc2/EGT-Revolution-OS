@@ -1,0 +1,10 @@
+{
+ "freq": 7878,
+ "reps": 4,
+ "single_med": 0.5674,
+ "Sigma_symmetric": 0.505,
+ "Sigma_stagger120": 1.8415,
+ "ratio_sym": 0.89,
+ "ratio_stag": 3.245,
+ "phase_repeat_max_deg": 0.39
+}
