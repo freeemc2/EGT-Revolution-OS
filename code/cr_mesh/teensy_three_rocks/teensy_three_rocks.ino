@@ -214,6 +214,11 @@ void loop() {
       if (sscanf(cmd.c_str() + 2, "%d %d", &a, &b) == 2) setPair(a, b);
       Serial.print("R PAIR "); Serial.print(pairA); Serial.print(" "); Serial.println(pairB);
     }
+    else if (cmd == "V") {
+      applyMode(0); measureDC();
+      Serial.print("R DC "); Serial.print(dcOffset[0]); Serial.print(" ");
+      Serial.print(dcOffset[1]); Serial.print(" "); Serial.println(dcOffset[2]);
+    }
     else if (cmd == "x") { streaming = false; applyMode(0); Serial.println("R OFF"); }
   }
 
