@@ -85,3 +85,19 @@ pickup from the drive wiring into the high-Z runner nodes. Per the pre-registere
 before any coil data — low-value shunt (~100 R) from each A-pin to GND (runner source ~1 ohm, so negligible loading),
 twist each drive pair (pin -> 220 R -> load, return), keep drive and runner leads apart, verify runner norths on GND.
 Then re-run CTRL2 against the same sealed criterion. S0/S1 remain VOID; eigenmode data NOT to be taken until PASS.
+
+## CONTROL2 RE-RUN — dummy load + 100 R shunts A0/A1/A2 -> GND (2026-09-15 06:25 -0400) — FAIL, but diagnostic
+Same seal, same protocol. Prior run kept as `sep_CTRL2_noshunt_0611.json`; this one `sep_CTRL2_shunt_0625.json`.
+
+| f | limit (3x floor) | A0 before -> after | A1 before -> after |
+|---|---|---|---|
+| 7878 | 0.0095 | 0.094 -> 0.035 (x2.7 better, still x3.7 over) | 0.115 -> 0.093 (x1.2, still x9.8 over) |
+| 12000 | 0.0147 | 0.142 -> 0.053 (x2.7 better, still x3.6 over) | 0.172 -> 0.139 (x1.2, still x9.5 over) |
+
+Discrimination: a shunt to GND kills pickup that arrives AT THE NODE (capacitive, high-Z) but does nothing to an EMF
+induced IN SERIES around the runner loop (magnetic, from the drive current's loop). A0's residual is mostly
+node-type and the shunt took most of it; A1's residual is loop-type — the dummy-load drive loop (pin 2 -> 220 R ->
+jumper -> GND) carries the full drive current and its loop area links A1's runner loop. Both still f-proportional.
+Next (pre-registered): shrink loop areas — twist the drive path tightly as a pair (out and return together),
+twist each runner pair (south -> A-pin with north -> GND), move the dummy-load loop away from the A1 runner.
+Re-run vs the same seal. Still NO coil data until PASS.
