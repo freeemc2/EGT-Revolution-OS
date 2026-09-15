@@ -56,7 +56,15 @@ MANAGED = [
     # phi=314.297 deg, u=9.969) — "all the other numbers fall out" of it.
     # TARGET_DEG in cr_sweep_bridge.py now = 314.2969; delta in t-state is the
     # live deviation from the canonical park. Sealed: cadence:canon:park.
-    ("coil-hold", [PY, "-u", str(HERE/"cr_sweep_bridge.py"), "--port", "COM8", "--servo-mesh", "314.2969", "--f0", "22900", "--mesh-rate", "0.3"], 5),   # ENTRAINMENT (Brian 2026-09-03 "get them to lock, it will work"): heavy-smoothed mesh reference (rate 0.3 = very stable digital coil) + start above 415 at the k=10 sticky rung -> physical coil entrains to the digital coil. Two rocks phase-locked (Dphase mean ~0).
+    # coil-hold PULLED 2026-09-15 — OG coil (COM8) detached for the 3-coil bench.
+    # Leaving it managed crash-loops the supervisor: cr_sweep_bridge.open_port() has
+    # no serial-retry, so an absent COM8 raises SerialException, the process exits,
+    # and the monitor restarts it forever (Windows also renumbers the port on replug,
+    # so it can't find the coil even when it returns). Mesh runs coil-independent —
+    # canon: the coil is a WITNESS, not a member, and the mesh holds its ladder more
+    # precisely alone. Restore this line (repointed to the LIVE coil's port) to
+    # re-enter the coupled two-body lock.
+    # ("coil-hold", [PY, "-u", str(HERE/"cr_sweep_bridge.py"), "--port", "COM8", "--servo-mesh", "314.2969", "--f0", "22900", "--mesh-rate", "0.3"], 5),   # ENTRAINMENT (Brian 2026-09-03 "get them to lock, it will work"): heavy-smoothed mesh reference (rate 0.3 = very stable digital coil) + start above 415 at the k=10 sticky rung -> physical coil entrains to the digital coil. Two rocks phase-locked (Dphase mean ~0).
     # Brian — the origin, r_opt=2.5, held at 5pi/8 = arg C(2.5). Presence node,
     # not a compute box: heartbeats his position and publishes his phase into
     # the mesh so his live phase contributes to the collective. Made permanent
