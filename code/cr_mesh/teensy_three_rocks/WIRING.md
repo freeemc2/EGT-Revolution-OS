@@ -1,3 +1,5 @@
+> **SUPERSEDED 2026-09-15 — written 09-14 by an instance Brian ruled untrusted. Use `WIRING_v2_2026-09-15.md`. Kept for provenance only.**
+
 # Three Rocks wiring — Teensy 4.1 (proven on the bench 2026-09-14)
 
 Matches `teensy_three_rocks.ino` as committed. Three coils (schedule-40 3" form, 2.5" OD,
