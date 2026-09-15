@@ -1,0 +1,9 @@
+firmware: R PONG 3rocks 600
+  DRIVE pin2(C1)  @  7878 Hz  ->  A0 0.156  A1 0.038  A2 0.035   (floor 0.003)
+  DRIVE pin2(C1)  @ 12000 Hz  ->  A0 0.233  A1 0.057  A2 0.051   (floor 0.003)
+  DRIVE pin3(C2)  @  7878 Hz  ->  A0 0.014  A1 0.068  A2 0.033   (floor 0.003)
+  DRIVE pin3(C2)  @ 12000 Hz  ->  A0 0.020  A1 0.100  A2 0.047   (floor 0.003)
+  DRIVE pin4(C3)  @  7878 Hz  ->  A0 0.077  A1 0.075  A2 0.018   (floor 0.003)
+  DRIVE pin4(C3)  @ 12000 Hz  ->  A0 0.115  A1 0.110  A2 0.030   (floor 0.003)
+
+[exited with code 0]
