@@ -1,5 +1,16 @@
 # THREE ROCKS — COMPLETE BOARD PINOUT (Teensy 4.1) — 2026-09-15
 
+## ★★★ MEASURED ROOT CAUSE (2026-09-15, clean DC read via firmware 'V', sampler paused): all 3 sense pins sit at
+## 1003/1023 counts = ~3.24 V = pinned near the 3.3 V rail. Mid-rail (correct) would be ~512 = ~1.65 V.
+## MEANING: the mid-rail divider is NOT formed. Each sense pin has ONLY the pull-up (10K -> 3.3V). The pull-down
+## 10K is miswired 3.3V -> 10K -> GND as a standalone bleeder (Brian's own description), so it never touches the
+## sense node -> the pin floats to the rail. Common to ALL THREE channels (all read 1003), so it's a topology
+## error, not a per-coil break. This ALSO invalidates the earlier per-pin 'C3 dead' reading: the ADC input was
+## railed, so the coil signal was clipping -> those magnitudes were distorted, not honest coupling.
+## FIX (all 3 channels): move the top end of each PULL-DOWN 10K off the 3.3V rail and onto the SENSE NODE
+## (runner-south / A-pin). Both 10Ks must meet at the sense node: one up to 3.3V, one down to GND. Re-read 'V';
+## expect ~512 counts (~1.65 V) on all three. THEN re-run the per-pin coupling diagnostic (now trustworthy).
+
 ## ★★ DRIVE-PATH BUG FOUND (Brian observation 2026-09-15): 220R jumps straight to a GROUND wire.
 ## Brian sees: drive pin -> breadboard -> 220R -> ground wire -> GND, i.e. pin -> 220R -> GND with the COIL
 ## WINDING NOT in the current path. That shorts the winding / bypasses the coil -> no field -> no coupling.
