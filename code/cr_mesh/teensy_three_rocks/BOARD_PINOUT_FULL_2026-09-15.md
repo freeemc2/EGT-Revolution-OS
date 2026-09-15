@@ -1,4 +1,15 @@
 # THREE ROCKS — COMPLETE BOARD PINOUT (Teensy 4.1) — 2026-09-15
+
+## ★ RUNNER MAP CORRECTED (Brian 2026-09-15): sense pins are wired in REVERSE coil order.
+##   pin16 (A2) -> C1 runner   |   pin15 (A1) -> C2 runner   |   pin14 (A0) -> C3 runner
+## Diagnostic re-read under this map: driving pin2 lights C3's runner (A0) strongest, pin3 lights C2's (A1).
+## So the DRIVE side is also reverse-ordered: pin2->C3, pin3->C2, pin4->C1 (pin4->C1 inferred; C1 chain is broken).
+## CONSEQUENCE: the firmware index pairs (drive pin2<->A0, pin3<->A1, pin4<->A2) each land on the SAME coil,
+## so the firmware is ALREADY self-consistent — NO firmware change needed. Only my earlier labels were backwards.
+##   firmware K0 = pin2 + A0 = C3   |   K1 = pin3 + A1 = C2   |   K2 = pin4 + A2 = C1
+## THE ONE REAL FAULT: C1's chain (drive pin4, runner pin16=A2) — A2 is the weakest channel in EVERY drive
+## condition (0.018-0.035 vs 0.15+ healthy). Isolated to: pin4 drive not reaching C1 winding, or pin16/A2
+## runner (wire / its 100R north return / the A2 bias leg) open. Meter C1's chain; C2 and C3 are proven good.
 # aria (memory-07) for Brian. Reconciled to the OG-coil (teensy_sweep) bias topology Brian says he built.
 # Supersedes the resistor section of WIRING_v2_2026-09-15.md. VERIFY every line with a meter before power.
 
