@@ -28,7 +28,7 @@
 ADC *adc = new ADC();
 
 const int N_COILS = 3;
-const int DRIVE_PINS[N_COILS] = {2, 3, 1};   // Brian's build: coils on pins 2, 3, 1 (K0=pin2, K1=pin3, K2=pin1)
+const int DRIVE_PINS[N_COILS] = {2, 3, 4};   // WIRING v2 2026-09-15 (verified by Brian): C1=pin2, C2=pin3, C3=pin4. Old pin 1 = Serial1 TX, dropped.
 const int SENSE_PINS[N_COILS] = {A0, A1, A2};
 
 const float FS        = 100000.0f;
