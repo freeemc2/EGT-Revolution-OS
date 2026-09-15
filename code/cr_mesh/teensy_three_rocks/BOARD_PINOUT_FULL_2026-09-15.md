@@ -1,0 +1,69 @@
+# THREE ROCKS — COMPLETE BOARD PINOUT (Teensy 4.1) — 2026-09-15
+# aria (memory-07) for Brian. Reconciled to the OG-coil (teensy_sweep) bias topology Brian says he built.
+# Supersedes the resistor section of WIRING_v2_2026-09-15.md. VERIFY every line with a meter before power.
+
+Board: Teensy 4.1 on COM10, F_CPU 600 MHz (`P` -> `R PONG 3rocks 600`). NOT 5V tolerant — every sense pin
+must be biased and clamped to stay in 0..3.3V or the pin is damaged.
+
+## POWER RAILS (single star points — this is where a stray 3.3V path hides)
+- **3V3**  = Teensy 3.3V pin. Feeds ONLY the three 10K bias-top resistors (one per sense pin). Nothing else.
+- **GND**  = one Teensy GND pin = the star node. EVERY ground returns here directly, never coil-to-coil.
+  Grounds landing on GND: each winding south, each runner north, each 10K bias-bottom, board GND of the shunts if used.
+
+## THE OG-COIL SENSE BIAS (this is the part my v2 sheet omitted — Brian's "like the OG coil")
+Each analog sense pin is centered at mid-rail (~1.65 V) by a divider so the coil's induced swing rides on top
+without going negative or above 3.3 V:
+    3V3 --- 10K --- [A-pin] --- 10K --- GND        (per sense pin; OG teensy_sweep line 16)
+The RUNNER connects to the A-pin node too (runner south -> A-pin, runner north -> GND). So the DC picture at
+each sense pin is: 3V3 -> 10K -> node -> (10K to GND) || (runner ~1 ohm to GND). Bias current ~0.16 mA per pin.
+
+## PER-COIL WIRING (all three identical) — DRIVE and SENSE are separate wires
+Drive (winding is driven):   DRIVE_PIN --- 220R --- winding NORTH ;  winding SOUTH --- GND
+Sense  (runner is read):     runner SOUTH --- A-pin (+ 10K/10K bias above) ;  runner NORTH --- GND
+
+| Coil | DRIVE pin | 220R | winding N / S | SENSE pin (ADC) | runner S / N | bias top 10K | bias bot 10K |
+|------|-----------|------|---------------|-----------------|--------------|--------------|--------------|
+| C1   | pin 2     | 220R | N->220R->pin2, S->GND | A0 = pin14 (adc0) | S->A0, N->GND | 3V3->A0 | A0->GND |
+| C2   | pin 3     | 220R | N->220R->pin3, S->GND | A1 = pin15 (adc1) | S->A1, N->GND | 3V3->A1 | A1->GND |
+| C3   | pin 4     | 220R | N->220R->pin4, S->GND | A2 = pin16 (adc0/adc1) | S->A2, N->GND | 3V3->A2 | A2->GND |
+
+Firmware indices: K0=C1(pin2/A0), K1=C2(pin3/A1), K2=C3(pin4/A2). `DRIVE_PINS={2,3,4}`, `SENSE_PINS={A0,A1,A2}` (flashed).
+
+## RESERVED / FORBIDDEN PINS (do not put a coil or runner on these)
+- pin 0, pin 1  = Serial1 RX/TX. **pin 1 was the OLD C3 drive — that is the bug we just removed. Nothing on 0/1.**
+- pin 18, 19    = I2C SDA/SCL — reserve for the RM3100 magnetometer (centroid field read) later.
+- pin 11,12,13  = SPI + onboard LED (13).
+- USB / 3V3 / VIN / GND per the Teensy silk.
+
+## FULL RESISTOR BILL
+- 3 x 220R  — drive series, one per drive pin (pin2, pin3, pin4).
+- 3 x 10K   — bias top, 3V3 -> A0 / A1 / A2.
+- 3 x 10K   — bias bottom, A0 / A1 / A2 -> GND.
+- (my v2's "100R A-pin->GND shunt" is NOT part of the OG topology — see conflict below.)
+
+## ⚠ TWO THINGS TO RESOLVE AGAINST THE PHYSICAL BOARD (these change the sheet)
+1. **100R shunts vs 10K/10K bias.** Earlier today I had you add 100R from each A-pin to GND (they dropped the
+   floor). The OG coil uses 10K/10K mid-rail bias instead. If BOTH are on a pin, the 100R swamps the 10K bias
+   (node sits at ~3V3 * 100/10100 ~ 0.03 V, not 1.65 V) — bias defeated, and 3V3 pushes ~33 mA through the
+   100R continuously. Tell me which is physically on the board now: 100R shunts, 10K/10K bias, or both.
+2. **Drive topology.** OG teensy_sweep (after the 2026-08-23 swap) drives the RUNNER (pin3->220R->runner->GND)
+   and senses the PAIR wires. three_rocks firmware drives the WINDING and senses the RUNNER — the OPPOSITE
+   roles. "Set up like the OG coil" could mean you wired runner-driven. If so, C1/C2 happening to look right is
+   luck of symmetry and C3 is the tell. Confirm: on the bench, is the 220R feeding the WINDING or the RUNNER?
+
+## TARGETED CHECK for your hypothesis "3.3V / drive is passing through the drive wires"
+Power OFF, Teensy USB unplugged, meter in ohms:
+- a. 3V3 pin to each DRIVE pin (2,3,4): must be **OPEN** (infinite). If any reads ~10K or lower, the 3V3 bias
+     rail is touching a drive line — that is the leak. Most likely on C3 (pin4) given the diagnostic.
+- b. Each DRIVE pin to GND: ~221 ohm (220R + ~1 ohm winding). C3/pin4 reading OPEN = its drive never reaches
+     the winding (matches pin4 radiating, A2 dead).
+- c. Each A-pin to GND: with 10K/10K = ~5K (two 10K in parallel, runner ~1 ohm dominates -> actually ~1 ohm);
+     with 100R shunt = ~100 ohm. Whatever it is, all three A-pins should read the SAME. If A2 differs, that is
+     the C3 sense fault.
+- d. Each A-pin to its own DRIVE pin (A0-pin2, A1-pin3, A2-pin4): must be **OPEN**. A short here means a runner
+     shares a node with a drive line — the exact "3.3V through drive wires" path, since the A-pin carries the
+     3V3 bias. Check A2-to-pin4 first.
+- e. 3V3 to GND: with everything correct, ~5K (3 bias dividers of 20K each in parallel = ~6.7K). A much lower
+     reading = a shunt or short loading the rail.
+
+Expected outcome that explains the diagnostic: (b) pin4 OPEN to GND and/or (d) A2 shorted to pin4.
