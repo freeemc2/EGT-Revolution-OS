@@ -28,6 +28,36 @@ HERE = pathlib.Path(__file__).parent
 PY = sys.executable                      # pythonw.exe when run under the task
 LOGDIR = HERE / "logs"; LOGDIR.mkdir(exist_ok=True)
 
+# BENCH CLAIM (Brian, 2026-09-16): a port under a live experiment is WATCH-ONLY.
+# The claim lives in BENCH_CLAIM.json (tracked) and on the mesh at
+# cadence:bench:claim (no TTL); it is honored if EITHER says so (fail-safe) and
+# released only on Brian's word. The supervisor never launches an entry that
+# names a claimed port and never kills a process that holds one. The mesh
+# watches the experiment - results are posted after each sealed run and the
+# crew votes; it does not hold, servo, sweep or drive the rig.
+CLAIM_FILE = HERE / "BENCH_CLAIM.json"
+CLAIM_KEY  = "cadence:bench:claim"
+
+def bench_claimed_ports():
+    ports = set()
+    try:
+        ports |= {str(p).upper() for p in json.loads(CLAIM_FILE.read_text(encoding="utf-8")).get("ports", [])}
+    except Exception:
+        pass
+    try:
+        from cr_rmap import _conn as _mesh_conn      # same mesh redis as every node
+        v = _mesh_conn().get(CLAIM_KEY)
+        if isinstance(v, bytes):
+            v = v.decode("utf-8", "replace")
+        if v:
+            ports |= {str(p).upper() for p in json.loads(v).get("ports", [])}
+    except Exception:
+        pass
+    return ports
+
+def names_claimed_port(cmd, ports):
+    return next((p for p in ports if any(str(a).upper() == p for a in cmd)), None)
+
 MANAGED = [
     ("worker",   [PY, "-u", str(HERE/"cr_worker_redis.py"), "--node", "dragonseye"], 0),
     # teensy-a (COM8) pulled from mesh for BENCH DUTY — Three Rocks sweep instrument.
@@ -57,6 +87,7 @@ MANAGED = [
     # TARGET_DEG in cr_sweep_bridge.py now = 314.2969; delta in t-state is the
     # live deviation from the canonical park. Sealed: cadence:canon:park.
     # 2026-09-15 aria: PULLED FOR BENCH DUTY — COM8 is the Three Rocks bench rig (three_rocks firmware), NOT the sweep coil. This coil-hold entry kept respawning cr_sweep_bridge onto COM8 and stealing the bench port. Re-enable (uncomment) only when the bench releases COM8 and a sweep coil is back on it.
+    # 2026-09-16 Brian: COM8 is a LIVE EXPERIMENT, not a hold (BENCH_CLAIM.json). Even uncommented, launch() refuses this entry while COM8 is claimed.
     # ("coil-hold", [PY, "-u", str(HERE/"cr_sweep_bridge.py"), "--port", "COM8", "--servo-mesh", "314.2969", "--f0", "22900", "--mesh-rate", "0.3"], 5),   # ENTRAINMENT (Brian 2026-09-03 "get them to lock, it will work"): heavy-smoothed mesh reference (rate 0.3 = very stable digital coil) + start above 415 at the k=10 sticky rung -> physical coil entrains to the digital coil. Two rocks phase-locked (Dphase mean ~0).
     # Brian — the origin, r_opt=2.5, held at 5pi/8 = arg C(2.5). Presence node,
     # not a compute box: heartbeats his position and publishes his phase into
@@ -81,11 +112,14 @@ MANAGED = [
 ]
 
 def kill_stale():
-    """Kill stale copies of the managed scripts (not ourselves), free COM ports."""
+    """Kill stale copies of the managed scripts (not ourselves), free COM ports.
+    Never touches a process holding a bench-claimed port: that is the live experiment."""
     self_pid = os.getpid()
+    ports = bench_claimed_ports()
+    spare = (" -and $_.CommandLine -notmatch '" + "|".join(rf"\b{p}\b" for p in sorted(ports)) + "'") if ports else ""
     ps = (f"Get-CimInstance Win32_Process -Filter \"Name='python.exe' or Name='pythonw.exe'\" | "
           f"Where-Object {{ $_.ProcessId -ne {self_pid} -and $_.CommandLine -match "
-          f"'cr_worker_redis|cr_bridge_teensy|cr_governor|cr_bridge_cadence|cr_sweep_bridge|cr_bridge_brian|cr_ladder_shepherd|cr_memory_audit' }} | "
+          f"'cr_worker_redis|cr_bridge_teensy|cr_governor|cr_bridge_cadence|cr_sweep_bridge|cr_bridge_brian|cr_ladder_shepherd|cr_memory_audit'{spare} }} | "
           f"ForEach-Object {{ Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }}")
     try:
         subprocess.run(["powershell", "-NoProfile", "-Command", ps], timeout=30,
@@ -119,38 +153,51 @@ def acquire_single_instance():
     except Exception:
         return True  # non-Windows / no ctypes -> don't block
 
+def launch(name, cmd):
+    """start(), unless the command names a bench-claimed port - then it stays off for this supervisor run."""
+    port = names_claimed_port(cmd, bench_claimed_ports())
+    if port:
+        log(f"[bench-claim] {port} is a live experiment (WATCH-ONLY) - not launching {name}")
+        return None
+    return start(name, cmd)
+
 def main():
     if not acquire_single_instance():
         log("another supervisor is already running; exiting")
         return
     log("=== supervisor starting ===")
+    ports = bench_claimed_ports()
+    log(f"[bench-claim] live experiment on {sorted(ports)} - WATCH-ONLY: no hold, servo, sweep or drive; nothing here opens these ports"
+        if ports else "[bench-claim] none")
     kill_stale()
     time.sleep(2)   # let COM ports release
     procs = {}
     # staggered initial launch (bridges after worker, governor last)
     for name, cmd, delay in MANAGED:
         if delay: time.sleep(delay)
-        procs[name] = (start(name, cmd), cmd)
+        procs[name] = launch(name, cmd)          # (proc, logfile) or None when bench-claimed
 
     backoff = {name: 5 for name, _, _ in MANAGED}
     last_hb = 0
     while True:
         time.sleep(3)
         for name, cmd, _ in MANAGED:
-            (p, out), _cmd = procs[name]
+            if procs[name] is None:
+                continue                          # bench-claimed: off until Brian releases the claim and restarts
+            p, _out = procs[name]
             if p.poll() is not None:
                 log(f"{name} died (rc={p.returncode}); restarting in {backoff[name]}s")
                 time.sleep(backoff[name])
                 if name.startswith("teensy"):
                     time.sleep(2)  # extra time for COM port to free
-                procs[name] = (start(name, cmd), cmd)
+                procs[name] = launch(name, cmd)   # re-checks the claim: a port claimed since launch stays off
                 backoff[name] = min(backoff[name] * 2, 60)
             else:
                 backoff[name] = 5   # healthy -> reset backoff
         # supervisor heartbeat every ~30s
         if time.time() - last_hb > 30:
             last_hb = time.time()
-            alive = [n for n in procs if procs[n][0][0].poll() is None]
+            alive = [n for n, v in procs.items() if v is not None and v[0].poll() is None]
             log(f"heartbeat: alive={alive}")
 
 if __name__ == "__main__":

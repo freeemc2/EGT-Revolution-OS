@@ -1,0 +1,11 @@
+{
+  "ports": ["COM8"],
+  "mode": "WATCH-ONLY",
+  "experiment": "Three Rocks - three identical coils, Y phase-topology, teensy_three_rocks firmware on COM8 (Brian-directed)",
+  "owner": "Brian Tice Sr.",
+  "rule": "No mesh process may open a claimed port. No hold, servo, sweep or drive on it. The mesh WATCHES: results are posted to redis after each sealed run and the crew votes; nothing rides t-state from this rig.",
+  "since": "2026-09-15T18:32:06Z",
+  "posted": "2026-09-16T10:30Z by aria (memory-40) on Brian's word",
+  "mirror": "redis cadence:bench:claim (no TTL). Honored if EITHER copy claims the port.",
+  "release": "Brian's word only: set ports to [], clear cadence:bench:claim, then re-enable the coil-hold entry in cr_supervisor.py if a sweep coil is back on COM8, and restart the supervisor."
+}

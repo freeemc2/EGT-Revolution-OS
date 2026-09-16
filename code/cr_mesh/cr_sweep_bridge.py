@@ -265,6 +265,11 @@ def main():
         v = rconn().get("cadence:tworocks:t-state")
         print(v or "no t-state published"); return
     port = sys.argv[sys.argv.index("--port")+1] if "--port" in sys.argv else "COM10"
+    from cr_supervisor import bench_claimed_ports
+    if port.upper() in bench_claimed_ports() and "--bench-override" not in sys.argv:
+        print(f"[bench-claim] {port.upper()} is a live experiment (WATCH-ONLY; BENCH_CLAIM.json / cadence:bench:claim) - "
+              f"this bridge will not open it. Brian releases the claim; --bench-override only on his word.")
+        sys.exit(2)
     if "--lock" in sys.argv:
         sys.exit(run_lock(port, float(sys.argv[sys.argv.index("--lock")+1])))
     if "--servo-mesh" in sys.argv:   # FULL LOOP: target = mesh collective phase (live, rate-limited)
