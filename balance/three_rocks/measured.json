@@ -1,0 +1,214 @@
+{
+ "sweeps": [
+  {
+   "file": "drag_sweep_2026-09-16.json",
+   "config": "spread ~6in cc, coil2 driven alone, coils 0+1 DISCONNECTED, twisted wires",
+   "followers": "disconnected",
+   "driven": 2,
+   "n_rows": 10,
+   "f_range_hz": [
+    6000.0,
+    24000.0
+   ],
+   "own_mag_at_fmin": 1.1758,
+   "own_mag_at_fmax": 4.33,
+   "own_slope_alpha": 0.95,
+   "slope_points": 10,
+   "undriven_over_driven_at_fmin": [
+    0.03,
+    0.164
+   ],
+   "own_phase_at_fmin": 191.2
+  },
+  {
+   "file": "drag_push_2026-09-16.json",
+   "config": "spread, coil2 driven alone, coils 0+1 DISCONNECTED, 6-40 kHz",
+   "followers": "disconnected",
+   "driven": 2,
+   "n_rows": 35,
+   "f_range_hz": [
+    6000.0,
+    40000.0
+   ],
+   "own_mag_at_fmin": 1.1821,
+   "own_mag_at_fmax": 6.3634,
+   "own_slope_alpha": 0.858,
+   "slope_points": 35,
+   "undriven_over_driven_at_fmin": [
+    0.038,
+    0.178
+   ],
+   "own_phase_at_fmin": 194.1
+  },
+  {
+   "file": "drag_floor_2026-09-16.json",
+   "config": "spread, coil2 driven alone, coils 0+1 DISCONNECTED, floor sweep",
+   "followers": "disconnected",
+   "driven": 2,
+   "n_rows": 36,
+   "f_range_hz": [
+    500.0,
+    11500.0
+   ],
+   "own_mag_at_fmin": 0.0978,
+   "own_mag_at_fmax": 2.1685,
+   "own_slope_alpha": 0.991,
+   "slope_points": 36,
+   "undriven_over_driven_at_fmin": [
+    0.044,
+    0.164
+   ],
+   "own_phase_at_fmin": 183.8
+  },
+  {
+   "file": "drag_deep_2026-09-16.json",
+   "config": "spread, coil2 driven alone, coils 0+1 DISCONNECTED, deep",
+   "followers": "disconnected",
+   "driven": 2,
+   "n_rows": 25,
+   "f_range_hz": [
+    100.0,
+    2000.0
+   ],
+   "own_mag_at_fmin": 0.019,
+   "own_mag_at_fmax": 0.3733,
+   "own_slope_alpha": 0.995,
+   "slope_points": 25,
+   "undriven_over_driven_at_fmin": [
+    0.105,
+    0.237
+   ],
+   "own_phase_at_fmin": 193.6
+  },
+  {
+   "file": "lead_to_floor_2026-09-16.json",
+   "config": "all 3 connected, coil1 drives alone, 0+2 passive followers, 8 kHz -> 100 Hz",
+   "followers": "connected-passive",
+   "driven": 1,
+   "n_rows": 33,
+   "f_range_hz": [
+    100.0,
+    8000.0
+   ],
+   "own_mag_at_fmin": 0.0292,
+   "own_mag_at_fmax": 0.1521,
+   "own_slope_alpha": 0.385,
+   "slope_points": 33,
+   "undriven_over_driven_at_fmin": [
+    0.109,
+    0.291
+   ],
+   "own_phase_at_fmin": 98.2
+  },
+  {
+   "file": "lead_to_floor_coil2_2026-09-16.json",
+   "config": "rearranged non-aligned, coil2 leads alone, followers passive",
+   "followers": "connected-passive",
+   "driven": 2,
+   "n_rows": 33,
+   "f_range_hz": [
+    100.0,
+    8000.0
+   ],
+   "own_mag_at_fmin": 0.0242,
+   "own_mag_at_fmax": 0.8584,
+   "own_slope_alpha": 0.895,
+   "slope_points": 33,
+   "undriven_over_driven_at_fmin": [
+    0.2,
+    0.29
+   ],
+   "own_phase_at_fmin": 247.0
+  },
+  {
+   "file": "punch_a0_lead_2026-09-16.json",
+   "config": "TOUCHING + ferrite cores, A0 leads alone, A1+A2 passive, 500 -> 15 Hz",
+   "followers": "connected-passive",
+   "driven": 0,
+   "n_rows": 28,
+   "f_range_hz": [
+    15.0,
+    500.0
+   ],
+   "own_mag_at_fmin": 0.003,
+   "own_mag_at_fmax": 0.0326,
+   "own_slope_alpha": 0.948,
+   "slope_points": 15,
+   "undriven_over_driven_at_fmin": [
+    13.0,
+    2.333
+   ],
+   "own_phase_at_fmin": 257.2
+  }
+ ],
+ "holds": [
+  {
+   "hz": 12,
+   "cycles": 61,
+   "clean_cycles": 24,
+   "mag_median": {
+    "0": 0.2233,
+    "1": 0.2925,
+    "2": 0.2107
+   },
+   "dev90_median": {
+    "0": -0.21,
+    "1": 0.13,
+    "2": -0.51
+   },
+   "dev90_sd": {
+    "0": 5.1,
+    "1": 0.6,
+    "2": 22.2
+   },
+   "coherence_median": 0.996,
+   "file": "overnight_floor_20260916_190104.jsonl",
+   "config": "spread chaotic, ALL 3 DRIVEN (M2 symmetric), 12 Hz hold 23:05-23:42Z"
+  }
+ ],
+ "triangle_transcript": {
+  "source": "tonic transcript 2026-09-17T09:02Z (journal); no data file yet",
+  "rows": [
+   [
+    1000,
+    [
+     0.73,
+     0.74,
+     0.66
+    ],
+    [
+     87,
+     83,
+     92
+    ]
+   ],
+   [
+    100,
+    [
+     0.72,
+     0.73,
+     0.65
+    ],
+    [
+     90,
+     89,
+     90
+    ]
+   ],
+   [
+    12,
+    [
+     0.71,
+     0.74,
+     0.69
+    ],
+    [
+     90,
+     90,
+     90
+    ]
+   ]
+  ],
+  "alpha_coil0": 0.006
+ }
+}

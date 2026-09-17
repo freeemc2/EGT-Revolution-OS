@@ -1,0 +1,53 @@
+{
+  "rig": "three-rocks, COM8, three identical Quad coils (Brian-built)",
+  "recorded": "2026-09-17 by tempo from Brian's numbers (voice) + coil_build_specs_3in.md; firmware teensy_three_rocks.ino; BOARD_PINOUT_FULL_2026-09-15.md",
+  "coil": {
+    "name": "Quad (n=4 star-quad twisted bundle), x3 identical",
+    "former": "3in sch40 PVC, OD 3.500 in",
+    "former_od_in": 3.5,
+    "turns": 64,
+    "strands": 4,
+    "wire_awg": 22,
+    "strand_length_ft": 65,
+    "twist_lay_in": 11.0,
+    "twist_note": "one full twist per 11 in = one bundle rotation per coil turn (circumference pi*3.5 = 11.0 in): every strand sweeps every geometric position once per turn",
+    "winding_length_in": 8.75,
+    "pitch_mm": 3.47,
+    "runner_awg": 18,
+    "runner": "straight axial wire under all the windings, between pipe and copper; sensed at its south end (A-pin), north end -> 100R -> GND bus",
+    "build_variance_lead_in": [2, 3],
+    "build_variance_note": "Brian stretched and measured by hand; 2-3 in lead-line difference at most between the three; 'the coils don't care'"
+  },
+  "drive": {
+    "waveform": "square 0..3.3 V (GPIO), fundamental amplitude (4/pi)*1.65 V = 2.101 V",
+    "v_high": 3.3,
+    "series_r_ohm": 220,
+    "pin_z_ohm": [20, 60],
+    "strands_on_pin": "UNKNOWN (Brian to confirm): 1 strand | 4 in parallel | 4 in series. Sheet carries all three.",
+    "path": "pin -> 220R -> winding north; winding south -> GND bus"
+  },
+  "sense": {
+    "adc_bits": 10,
+    "v_ref": 3.3,
+    "count_mv": 3.2258,
+    "fs_hz": 100000,
+    "integ_ms": 200,
+    "lockin": "I=mean(s*cos), Q=mean(s*sin), mag=sqrt(I^2+Q^2) -> mag = A/2 counts for a sine of amplitude A counts; phase=atan2(Q,I): in-phase-with-drive reads 90 deg by construction",
+    "a_pin_bias": "10K to 3.3V + 10K to GND at the sense node (mid-rail)",
+    "runner_return": "runner north -> 100R -> GND bus",
+    "node_z_ohm": 98
+  },
+  "geometry_today": {
+    "formation": "triangle (2026-09-17 morning), connected, no wires pulled",
+    "cc_spacing_in": null,
+    "angles_deg": null,
+    "note": "Brian to supply. 2026-09-16 spread config: ~2.5 in edge gap -> center-to-center ~6 in -> r = cc/OD = 1.71"
+  },
+  "shared_ground_r_ohm": {
+    "range": [0.02, 0.5],
+    "note": "breadboard rails + jumper contacts. The ONE EM parameter that can carry a flat, in-phase, common-mode reading. Not yet measured."
+  },
+  "stray_c_pf": [5, 50],
+  "parasitic_c_pf": [30, 100],
+  "noise_floor_counts": 0.003
+}

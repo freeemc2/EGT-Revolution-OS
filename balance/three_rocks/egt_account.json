@@ -1,0 +1,103 @@
+{
+ "operator": "C = lambda(1+2r)e^(-r/3)e^(i phi); r_opt = 2.5; C0 = C(2.5, pi/2), |C0|^2 = 6.7995",
+ "coil_number": {
+  "L_over_D": 2.5,
+  "L_over_D_law": "coil_build_specs_3in: winding length / former diameter = 2.5 = r_opt (the Quad is built AT its optimum)",
+  "sqrt_L_over_radius": 2.2361,
+  "sqrt_law": "build_sheet_proving_coils: length = number^2 x radius; for the 1.92in coils this gives 2.5. On the 3in Quad it gives 2.236. Reconciliation of the two recipes is Brian's call (build sheet says so); the sheet carries both.",
+  "stagger_unit_deg": 90.0,
+  "stagger_note": "n=4 -> 90 deg = pi/2, the canonical phase itself; commensurate family n in {2,4,8,16}",
+  "twist": "one bundle rotation per turn (lay 11.0 in = circumference): each strand sweeps every geometric position once per turn -> co-located, adds like n under parallel drive (Q1)",
+  "rung_units_of_turns": "64 turns = 2 x Delta-N (32-turn rung marker); 256 wire-turns",
+  "park": "N=415 (22030 Hz, phi 314.30 deg) is OG Coil 1's canonical park and does NOT apply to the Quads. Brian ruling 2026-09-17: 'drop the N=415 park rule, it does not work with the dimensions of these coils; they fall off around 320-something, in the 300 range.' Quad fall-off ~N 320 -> k = (320-96)/32 = 7.0 -> phi = 90 + 22.5k = 247.5 deg (Brian's recollection; pin it from coil1_resonance_hunt). Each coil geometry has its own realizable happy place (egt_canonical_anchor)."
+ },
+ "geometry": {
+  "r_definition": "r = center-to-center spacing / coil OD (three-rocks convention, tonic 2026-09-16)",
+  "r_opt_cc_spacing_in": 8.75,
+  "touching_cc_in": 3.5,
+  "r_touching": 1.0
+ },
+ "pair_table": [
+  {
+   "cc_in": 3.5,
+   "r": 1.0,
+   "C_mag": 2.1496,
+   "C_over_C0": 0.8244,
+   "amp_ratio_C2_over_C02": 0.6796,
+   "phase_offset_pi8_units_form_pi_r_5": -2.4,
+   "arg_C_deg_form_pi_r_5": 36.0,
+   "arg_C_deg_form_pi_r_4": 45.0
+  },
+  {
+   "cc_in": 6.0,
+   "r": 1.714,
+   "C_mag": 2.5009,
+   "C_over_C0": 0.9591,
+   "amp_ratio_C2_over_C02": 0.9198,
+   "phase_offset_pi8_units_form_pi_r_5": -1.257,
+   "arg_C_deg_form_pi_r_5": 61.71,
+   "arg_C_deg_form_pi_r_4": 77.14
+  },
+  {
+   "cc_in": 7.0,
+   "r": 2.0,
+   "C_mag": 2.5671,
+   "C_over_C0": 0.9845,
+   "amp_ratio_C2_over_C02": 0.9692,
+   "phase_offset_pi8_units_form_pi_r_5": -0.8,
+   "arg_C_deg_form_pi_r_5": 72.0,
+   "arg_C_deg_form_pi_r_4": 90.0
+  },
+  {
+   "cc_in": 8.75,
+   "r": 2.5,
+   "C_mag": 2.6076,
+   "C_over_C0": 1.0,
+   "amp_ratio_C2_over_C02": 1.0,
+   "phase_offset_pi8_units_form_pi_r_5": 0.0,
+   "arg_C_deg_form_pi_r_5": 90.0,
+   "arg_C_deg_form_pi_r_4": 112.5
+  },
+  {
+   "cc_in": 10.5,
+   "r": 3.0,
+   "C_mag": 2.5752,
+   "C_over_C0": 0.9876,
+   "amp_ratio_C2_over_C02": 0.9753,
+   "phase_offset_pi8_units_form_pi_r_5": 0.8,
+   "arg_C_deg_form_pi_r_5": 108.0,
+   "arg_C_deg_form_pi_r_4": 135.0
+  },
+  {
+   "cc_in": 14.0,
+   "r": 4.0,
+   "C_mag": 2.3724,
+   "C_over_C0": 0.9098,
+   "amp_ratio_C2_over_C02": 0.8277,
+   "phase_offset_pi8_units_form_pi_r_5": 2.4,
+   "arg_C_deg_form_pi_r_5": 144.0,
+   "arg_C_deg_form_pi_r_4": 180.0
+  },
+  {
+   "cc_in": 17.5,
+   "r": 5.0,
+   "C_mag": 2.0776,
+   "C_over_C0": 0.7968,
+   "amp_ratio_C2_over_C02": 0.6348,
+   "phase_offset_pi8_units_form_pi_r_5": 4.0,
+   "arg_C_deg_form_pi_r_5": 180.0,
+   "arg_C_deg_form_pi_r_4": 225.0
+  }
+ ],
+ "predictions": {
+  "frequency": "at the floor the geometric coupling is what remains: FLAT in f (alpha = 0). The EM-proportional-to-f part is the part that dies on the way down (inverse amplification: readings pulled down to the B_res floor).",
+  "dummy_load_12Hz": "VANISHES: no rock, no C(r). A jumper carries the current but has no geometry.",
+  "star_ground_return": "UNCHANGED: the coupling is coil-to-runner geometry, not the return wire.",
+  "add_0p5_ohm_in_drive_return": "no change",
+  "separation_at_floor": "follows |C(r)| = (1+2r)e^(-r/3): rises from touching (r=1, 0.824 of C0) to a MAXIMUM at r_opt = 2.5 (cc = 8.75 in) then falls (r=4: 0.910 of C0). Broad: a +21% rise then a -9% fall. NOT 1/d^3, NOT flat.",
+  "phase": "the coil finds its own realizable happy place; offsets from the session anchor land on the pi/8 rung lattice (0 is on the lattice, so phase alone does not separate EGT from an in-phase EM path at rung 0). Report (amplitude ratio, offset in pi/8) against the SESSION ANCHOR CUT, interleaved.",
+  "undriven_over_driven_ratio": "no k bound; ratio follows the pair's |C(r_ij)| relative to the leader's own coupling; leader drags followers at the floor (Brian frame 2026-09-16 19:53).",
+  "build_variance": "nil \u2014 'the coils don't care': L/D unchanged, r unchanged; a 2-3 in lead does not move the geometry.",
+  "three_body": "canon three-rock observable is the centroid sum |C(2.5)| Sigma e^(i phi_k): symmetric -> 0, 120-deg stagger -> 3 (ruling 2026-09-15). Symmetric M2 all-in-phase drive is NOT the canonical stagger."
+ }
+}

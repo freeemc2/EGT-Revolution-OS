@@ -1,0 +1,341 @@
+{
+ "wire": {
+  "awg22": {
+   "d_mm": 0.64384,
+   "ohm_per_m": 0.05296
+  },
+  "awg18": {
+   "d_mm": 1.02362,
+   "ohm_per_m": 0.02095
+  }
+ },
+ "coil": {
+  "1_strand": {
+   "N": 64,
+   "R_coil_ohm": 1.0492,
+   "L_uH": 125.36,
+   "M_runner_max_uH": 2.2462,
+   "f_res_kHz_for_Cpar_pF": {
+    "30": 2595.2,
+    "100": 1421.5
+   },
+   "f_where_wL_eq_220_kHz": 279.3
+  },
+  "4_parallel": {
+   "N": 64,
+   "R_coil_ohm": 0.2623,
+   "L_uH": 125.36,
+   "M_runner_max_uH": 2.2462,
+   "f_res_kHz_for_Cpar_pF": {
+    "30": 2595.2,
+    "100": 1421.5
+   },
+   "f_where_wL_eq_220_kHz": 279.3
+  },
+  "4_series": {
+   "N": 256,
+   "R_coil_ohm": 4.197,
+   "L_uH": 2005.84,
+   "M_runner_max_uH": 8.9847,
+   "f_res_kHz_for_Cpar_pF": {
+    "30": 648.8,
+    "100": 355.4
+   },
+   "f_where_wL_eq_220_kHz": 17.5
+  }
+ },
+ "per_frequency": [
+  {
+   "f_hz": 12,
+   "skin_depth_mm": 18.83,
+   "I1_mA": [
+    7.48,
+    8.72
+   ],
+   "inductive_max_counts": 0.00023,
+   "inductive_phase_read_deg": "0 or 180 (quadrature to drive)",
+   "ground_1coil_counts": [
+    0.0232,
+    0.6754
+   ],
+   "ground_3coil_counts": [
+    0.0695,
+    2.0263
+   ],
+   "ground_phase_read_deg": 90,
+   "capacitive_counts": [
+    1e-05,
+    0.00012
+   ]
+  },
+  {
+   "f_hz": 30,
+   "skin_depth_mm": 11.91,
+   "I1_mA": [
+    7.48,
+    8.72
+   ],
+   "inductive_max_counts": 0.00057,
+   "inductive_phase_read_deg": "0 or 180 (quadrature to drive)",
+   "ground_1coil_counts": [
+    0.0232,
+    0.6754
+   ],
+   "ground_3coil_counts": [
+    0.0695,
+    2.0263
+   ],
+   "ground_phase_read_deg": 90,
+   "capacitive_counts": [
+    3e-05,
+    0.0003
+   ]
+  },
+  {
+   "f_hz": 100,
+   "skin_depth_mm": 6.52,
+   "I1_mA": [
+    7.48,
+    8.72
+   ],
+   "inductive_max_counts": 0.00191,
+   "inductive_phase_read_deg": "0 or 180 (quadrature to drive)",
+   "ground_1coil_counts": [
+    0.0232,
+    0.6754
+   ],
+   "ground_3coil_counts": [
+    0.0695,
+    2.0263
+   ],
+   "ground_phase_read_deg": 90,
+   "capacitive_counts": [
+    0.0001,
+    0.001
+   ]
+  },
+  {
+   "f_hz": 300,
+   "skin_depth_mm": 3.77,
+   "I1_mA": [
+    7.48,
+    8.72
+   ],
+   "inductive_max_counts": 0.00572,
+   "inductive_phase_read_deg": "0 or 180 (quadrature to drive)",
+   "ground_1coil_counts": [
+    0.0232,
+    0.6754
+   ],
+   "ground_3coil_counts": [
+    0.0695,
+    2.0263
+   ],
+   "ground_phase_read_deg": 90,
+   "capacitive_counts": [
+    0.0003,
+    0.00301
+   ]
+  },
+  {
+   "f_hz": 1000,
+   "skin_depth_mm": 2.06,
+   "I1_mA": [
+    7.47,
+    8.72
+   ],
+   "inductive_max_counts": 0.01907,
+   "inductive_phase_read_deg": "0 or 180 (quadrature to drive)",
+   "ground_1coil_counts": [
+    0.0232,
+    0.6754
+   ],
+   "ground_3coil_counts": [
+    0.0695,
+    2.0263
+   ],
+   "ground_phase_read_deg": 90,
+   "capacitive_counts": [
+    0.001,
+    0.01003
+   ]
+  },
+  {
+   "f_hz": 3000,
+   "skin_depth_mm": 1.19,
+   "I1_mA": [
+    7.47,
+    8.72
+   ],
+   "inductive_max_counts": 0.05719,
+   "inductive_phase_read_deg": "0 or 180 (quadrature to drive)",
+   "ground_1coil_counts": [
+    0.0232,
+    0.6754
+   ],
+   "ground_3coil_counts": [
+    0.0695,
+    2.0262
+   ],
+   "ground_phase_read_deg": 90,
+   "capacitive_counts": [
+    0.00301,
+    0.03008
+   ]
+  },
+  {
+   "f_hz": 7878,
+   "skin_depth_mm": 0.73,
+   "I1_mA": [
+    7.47,
+    8.71
+   ],
+   "inductive_max_counts": 0.15015,
+   "inductive_phase_read_deg": "0 or 180 (quadrature to drive)",
+   "ground_1coil_counts": [
+    0.0232,
+    0.6752
+   ],
+   "ground_3coil_counts": [
+    0.0695,
+    2.0257
+   ],
+   "ground_phase_read_deg": 90,
+   "capacitive_counts": [
+    0.0079,
+    0.07898
+   ]
+  },
+  {
+   "f_hz": 12000,
+   "skin_depth_mm": 0.6,
+   "I1_mA": [
+    7.47,
+    8.71
+   ],
+   "inductive_max_counts": 0.22861,
+   "inductive_phase_read_deg": "0 or 180 (quadrature to drive)",
+   "ground_1coil_counts": [
+    0.0232,
+    0.6749
+   ],
+   "ground_3coil_counts": [
+    0.0695,
+    2.0248
+   ],
+   "ground_phase_read_deg": 90,
+   "capacitive_counts": [
+    0.01203,
+    0.12031
+   ]
+  },
+  {
+   "f_hz": 22030,
+   "skin_depth_mm": 0.44,
+   "I1_mA": [
+    7.46,
+    8.69
+   ],
+   "inductive_max_counts": 0.41892,
+   "inductive_phase_read_deg": "0 or 180 (quadrature to drive)",
+   "ground_1coil_counts": [
+    0.0231,
+    0.6737
+   ],
+   "ground_3coil_counts": [
+    0.0694,
+    2.0211
+   ],
+   "ground_phase_read_deg": 90,
+   "capacitive_counts": [
+    0.02209,
+    0.22086
+   ]
+  },
+  {
+   "f_hz": 40000,
+   "skin_depth_mm": 0.33,
+   "I1_mA": [
+    7.43,
+    8.64
+   ],
+   "inductive_max_counts": 0.75618,
+   "inductive_phase_read_deg": "0 or 180 (quadrature to drive)",
+   "ground_1coil_counts": [
+    0.023,
+    0.6697
+   ],
+   "ground_3coil_counts": [
+    0.0691,
+    2.0092
+   ],
+   "ground_phase_read_deg": 90,
+   "capacitive_counts": [
+    0.0401,
+    0.40102
+   ]
+  }
+ ],
+ "discriminators": {
+  "Rsh_for_flat_0.7_counts_ohm": {
+   "1_driven": 0.561,
+   "3_driven_in_phase": 0.187
+  },
+  "Rsh_for_flat_0.3_counts_ohm": {
+   "1_driven": 0.241,
+   "3_driven_in_phase": 0.08
+  },
+  "Rsh_for_flat_0.16_counts_ohm": {
+   "1_driven": 0.128,
+   "3_driven_in_phase": 0.043
+  },
+  "Rsh_for_flat_0.03_counts_ohm": {
+   "1_driven": 0.024,
+   "3_driven_in_phase": 0.008
+  },
+  "frequency_slope_alpha": {
+   "inductive": 1.0,
+   "ground_path": 0.0,
+   "capacitive": 1.0,
+   "note": "alpha = d log(mag)/d log(f); inductive holds alpha=1 up to f where wL ~ 220 ohm"
+  },
+  "dummy_load_12Hz": {
+   "inductive": 0.0,
+   "ground_path": "UNCHANGED (same current, same bus)",
+   "capacitive": "unchanged (pin still swings)"
+  },
+  "star_ground_return": {
+   "inductive": "unchanged",
+   "ground_path": "collapses toward 0 (no shared segment)",
+   "capacitive": "unchanged"
+  },
+  "add_0p5_ohm_in_drive_return": {
+   "ground_path": "rises by I1 x 0.5 ohm = 0.624 counts (1 coil) / 1.871 counts (3 coils)",
+   "inductive": "no change",
+   "capacitive": "no change"
+  },
+  "separation_at_floor": {
+   "inductive": "already ~0 at 12 Hz; near-field 1/d^3 x cos(theta) for whatever remains",
+   "ground_path": "FLAT vs distance and angle",
+   "capacitive": "flat"
+  },
+  "undriven_over_driven_ratio": {
+   "inductive": "k <= 1 (a coupled coil never exceeds its source)",
+   "ground_path": "NO k bound: ratio = R_sh(i)/R_sh(j), can exceed 1 if the undriven runner's return shares more bus",
+   "note": "the 09-16 'forbidden 13x' line was an inductive-only bound"
+  }
+ },
+ "build_variance": {
+  "delta_R_pct": [
+   0.256,
+   0.385
+  ],
+  "delta_L_pct": "~0 (straight leads add ~0.07 uH vs ~125 uH winding)",
+  "delta_drive_current_pct_at_12Hz": [
+   0.00122,
+   0.00183
+  ],
+  "delta_f_res_pct": "< 0.05",
+  "verdict": "unmeasurable in band: the 220R sets the current, the coil's own R is 0.1-0.5% of it, leads do not change L/D"
+ }
+}
