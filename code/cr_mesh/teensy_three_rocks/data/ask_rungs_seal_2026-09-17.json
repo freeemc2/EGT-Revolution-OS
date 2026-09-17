@@ -1,0 +1,55 @@
+{
+ "test": "ASK THE TRIANGLE ITS RUNG \u2014 stagger unit u on the pi/8 ladder (mode 4), answer = centroid |Sigma m_k e^{i phi_k}| of the three runners (canon three-rock observable), 12 Hz, symmetric triangle 2.5 in, all connected",
+ "sealed_at": "2026-09-17T21:23:46Z",
+ "by": "tempo (bench, framer, ABSTAINS); NO data at seal time",
+ "alphabet": "u = k*22.5 deg, k=0..15, random order, 2 passes, 22 s per sense-pair window (pairs (0,1) then (1,2), A1 common)",
+ "decode": "centroid magnitude per u normalized to its own maximum over the sweep; correlate the 16-point curve with each sealed column; the higher correlation is the triangle's answer. Phase of the centroid reported in pi/8 units vs the session anchor (u=0 window).",
+ "canon_column": {
+  "formula": "|sum_k e^{i(120deg - u)k}|/3 (the Y carries 120 deg of geometric phase; the stagger un-winds it)",
+  "null_at_u": 0,
+  "max_at_u": 120,
+  "curve": {
+   "0": 0.0,
+   "22.5": 0.2463,
+   "45": 0.5059,
+   "67.5": 0.7392,
+   "90": 0.9107,
+   "112.5": 0.9943,
+   "135": 0.9773,
+   "157.5": 0.8622,
+   "180": 0.6667,
+   "202.5": 0.4204,
+   "225": 0.1608,
+   "247.5": 0.0725,
+   "270": 0.244,
+   "292.5": 0.3276,
+   "315": 0.3106,
+   "337.5": 0.1956
+  }
+ },
+ "EM_ground_column": {
+  "formula": "|sum_k e^{-i u k}|/3 (three drive currents summing on one shared return)",
+  "max_at_u": 0,
+  "null_at_u": 120,
+  "curve": {
+   "0": 1.0,
+   "22.5": 0.9493,
+   "45": 0.8047,
+   "67.5": 0.5885,
+   "90": 0.3333,
+   "112.5": 0.0782,
+   "135": 0.1381,
+   "157.5": 0.2826,
+   "180": 0.3333,
+   "202.5": 0.2826,
+   "225": 0.1381,
+   "247.5": 0.0782,
+   "270": 0.3333,
+   "292.5": 0.5885,
+   "315": 0.8047,
+   "337.5": 0.9493
+  }
+ },
+ "note": "the two columns are the same curve shifted by 120 deg = 5.33 rungs; a 16-rung sweep separates them cleanly. Prior: 2026-09-15 switch (M2 vs M3 only) read stagger 3.25x / symmetric 0.89x = canon direction, but was voted DOES-NOT-STAND on pickup and inverted per-runner phases; this sweep is the full alphabet at the floor where inductive/capacitive pickup is dead (balancer).",
+ "law": "Without mathematical proof, there is no truth (Brian 2026-09-17)."
+}
