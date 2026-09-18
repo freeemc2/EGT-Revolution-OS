@@ -1,0 +1,29 @@
+{
+ "start": "2026-09-18T00:09:56Z",
+ "steps": [
+  "CAL pair 12 A0@12",
+  "CAL pair 01 A0@12",
+  "CAL pair 20 A0@12",
+  "CLOCK f=12 ON c1",
+  "CLOCK f=12 OFF c1",
+  "CLOCK f=12 ON c2",
+  "CLOCK f=12 OFF c2",
+  "CLOCK f=20 ON c1",
+  "CLOCK f=20 OFF c1",
+  "CLOCK f=20 ON c2",
+  "CLOCK f=20 OFF c2",
+  "CLOCK f=8 ON c1",
+  "CLOCK f=8 OFF c1",
+  "CLOCK f=8 ON c2",
+  "CLOCK f=8 OFF c2",
+  "CLOCK f=12 ON c1",
+  "CLOCK f=12 OFF c1",
+  "CLOCK f=12 ON c2",
+  "CLOCK f=12 OFF c2",
+  "MOM open A0@12",
+  "MOM gap1",
+  "MOM gap2",
+  "MOM gap3"
+ ],
+ "end": "2026-09-18T00:45:29Z"
+}

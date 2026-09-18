@@ -65,6 +65,24 @@ mathematician; tempo framed and abstains).
   fixed-pair hold.
 - All-day log: the protocol's own periods.
 
+## 4. Calibration, clock, momentum, mode check (`calib_clock.py`, 2026-09-18 00:10-00:45Z) — CORRECTIONS
+
+- **ADC engine gains (measured):** ADC1/ADC0 = 3.10 (A0), 3.05 (A1), 2.62 (A2). Every pair-read mixes engines.
+  On one scale in the open state: A0 0.020, A1 0.021, **A2 0.013** — A2 is the weaker follower; its 0.035 above
+  was the engine. The rung table in section 2 has A1 from ADC1 in pair (0,1) and A2 from ADC1 throughout.
+- **CORRECTION to section 1:** the 11 s build-up (and the 22 s "cold", and the 36 s in the all-day run) was
+  **command latency** — one command per ~5 s firmware cycle, so M1/K0/L took ~10 s to apply. Timed from the L
+  acknowledgment, both followers are live on the **first packet (<= 5.6 s)** at 8, 12 and 20 Hz, and dark on
+  the first packet after M0. Build-up and release are both <= one packet. The rise/decay asymmetry is gone, and
+  timing no longer separates EM from EGT at this packet rate (both predict < 5 s). Follower magnitudes are
+  identical at 8/12/20 Hz (frequency-flat).
+- **Momentum (5 s leader gaps x3):** one dark packet, followers back on the next — undecidable at 5 s packets
+  (firmware `threePoint` minimum is 40 cycles/f = 3.3 s at 12 Hz).
+- **Mode conservation (tempo's read of section 2) — FAILS:** with gains applied, A0 = 0.027 + 0.122·|Σ| over
+  15 rungs, corr +0.24. The leader does not gain what the collective loses at a fixed ratio. What survives:
+  followers track the collective (+0.97), the leader is anti-correlated with the followers' magnitudes (−0.45),
+  the centroid follows the plain drive sum. The exchange picture is dead as stated.
+
 ## Held overnight
 
 State reopened at ~22:31Z: A0 driven alone at 12 Hz, pair (A1, A2), console logging every packet
