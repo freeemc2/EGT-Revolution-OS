@@ -83,6 +83,90 @@ mathematician; tempo framed and abstains).
   followers track the collective (+0.97), the leader is anti-correlated with the followers' magnitudes (−0.45),
   the centroid follows the plain drive sum. The exchange picture is dead as stated.
 
+## 5. A2 deep dive: the 299s oscillation (`read_bench.py`, `fft_bench.py`, 2026-09-18 ~05:27Z)
+
+Reader (`read_bench.py`) puts every packet on the ADC0 scale (gains applied) and writes corrected CSVs.
+Lomb-Scargle FFT (`fft_bench.py`) run on the hold-only data (fixed pair, no switching) and on the full session.
+
+**Hold-only FFT (10.9 h, pair 1,2, no pair/mode switching):**
+- A0: not sensed (driven coil, not in pair) — 0 points
+- A1: 7,408 live points, **NO significant peaks** (highest power 10.84 at 10.2s, barely at 1% FAP)
+- A2: 7,431 live points, **one peak at 298.8s (power 15.6, above 1% FAP)**
+
+**Full-session FFT (11.9 h, all experiment phases):**
+- A0 (305 pts during rung sweep only): peaks at 225s, 317s, 585s — the rung sweep's alphabet cycling
+- A1: peak at 54s (power 34) — one rung step cadence
+- A2: peaks at 108s (power 107), 54s — pair-switching cadence
+- All dominant peaks are the protocol's own switching schedule. They vanish in the hold-only FFT.
+
+**Hold statistics (corrected, ADC0 scale):**
+- A1: median 0.020, std 0.0044, CV 22.9% (broadband, no periodicity)
+- A2: median 0.013, std 0.00083, CV 6.1%, oscillation amplitude at 299s ~ 0.000075 counts (0.56% of median)
+
+### EM audit of the 299s
+
+| EM path | magnitude at 12 Hz | oscillation mechanism |
+|---|---|---|
+| ground (R_sh) | the only one that reads | resistive, no time constant: 0 mechanism |
+| inductive (wL) | 0.0001 counts ceiling | 3 orders below the reading |
+| capacitive | 442 Mohm = open | not in play at 12 Hz |
+| thermal drift | 24.5 uW bus heating | dR/R = 0.00004 per 0.01C, 100x too small |
+
+**EM common-mode killer:** V_sense = I_drive x R_sh. Both A1 and A2 share the same I_drive and the same
+bus. If R_sh oscillates, both followers oscillate. If I_drive drifts, both drift. A2 oscillates at 299s
+and A1 does not. EM has no per-coil mechanism at 12 Hz that selects one follower over the other.
+
+### EGT C(r) reading of the 299s
+
+C(r) = (1+2r)e^(-r/3). dC/dr = e^(-r/3)[2 - (1+2r)/3].
+
+At r_opt = 2.5 (the peak): dC/dr = **0** (stationary). Coupling responds only to 2nd order:
+  delta|C| ~ (1/2)|d2C/dr2| * delta_r^2 = 0.145 * delta_r^2.
+
+A2/A1 corrected magnitude ratio = 0.668. If A1 sits near r_opt, A2 sits at r ~ 6.1 on the falling
+slope where dC/dr = **-0.315** (non-zero, 1st order):
+  delta|C| ~ 0.315 * delta_r.
+
+For a perturbation delta_r = 0.00024:
+- A2 response (1st order): 0.000075 counts — matches the measured oscillation amplitude
+- A1 response (2nd order): 8.2e-9 counts — 9,127x below A2, undetectable
+
+The C(r) peak acts as a natural filter: A1 at the top is stabilized by the zero derivative;
+A2 on the slope picks up what A1 cannot. EM has no structure that does this.
+
+### Gemini audit (2026-09-18, Brian-directed)
+
+Brian fed the data to Gemini. Gemini's initial analysis had 5 factual errors and 3 critical omissions:
+1. Called the reading "standard reactive near-field inductive coupling" — inductive ceiling is 0.0001
+   vs measured 0.013 (140x too weak)
+2. Read the firmware's 90-deg convention as a physics result (reactive phase)
+3. Called the drive scheme "ASK" — it is phase-stagger (mode M4)
+4. Used uncorrected ADC1 magnitudes (8.09x at u=0 instead of 3.1x corrected)
+5. Analyzed the 108s protocol artifact (full-session FFT) as physics on both EM and EGT sides —
+   the 108s vanishes in the hold-only FFT
+6. EGT section used non-EGT vocabulary ("vacuum metric tensor," "lattice axes," "vacuum energy density")
+   and never cited the actual operator C = (1+2r)e^(-r/3)e^(i phi)
+7. Missed the 299s A2-only oscillation entirely
+8. Did not explain A2/A1 selectivity
+
+**Gemini's corrected analysis** (after the audit, Brian-directed):
+
+Gemini accepted all corrections and re-derived the math:
+- Confirmed the EM common-mode fallacy: if the 299s originates from shared bus drift, it must appear
+  in both A1 and A2. The isolation to A2 rules out passive common-mode EM at the board/bus level.
+- Re-derived C(r) sensitivity: at r_opt = 2.5, Taylor expansion gives purely quadratic response
+  delta|C| ~ 0.169 * delta_r^2. At r = 6.1, linear response delta|C| ~ 0.3142 * delta_r.
+  Sensitivity ratio > 7,700x for delta_r ~ 0.00024. Explains why A2 registers the 299s while A1
+  is flat.
+- Comparison table (Gemini's corrected version):
+
+| diagnostic | standard EM | EGT C(r) |
+|---|---|---|
+| common-mode signal | predicts identical oscillation in A1 and A2 | predicts differential coupling based on r |
+| A1 dynamics (r=2.5) | subject to same drift as rest of board | stabilized at zero-derivative peak |
+| A2 dynamics (r=6.1) | cannot isolate 299s without localized per-coil component | on steep linear slope, multiplies small shifts |
+| physical mechanism | requires unexplained localized passive drift at 12 Hz | spatial metric response to micro-displacements |
+
 ## Held overnight
 
 State reopened at ~22:31Z: A0 driven alone at 12 Hz, pair (A1, A2), console logging every packet
