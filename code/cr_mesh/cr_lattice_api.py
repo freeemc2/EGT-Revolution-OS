@@ -17,6 +17,7 @@ import argparse, json, time, math, threading, os
 import requests
 import cr_api_auth as auth
 import cr_rmap
+import concurrent.futures as _cf
 from flask import Flask, request, jsonify
 
 app = Flask(__name__)
@@ -66,17 +67,64 @@ LATTICE = {
 # experiment backend (one compute rock per r); their r-VALUES come from the
 # canonical r-map via cr_rmap (cached 60s; falls back to the sealed SEED if redis
 # is down). No more hardcoded/duplicated r_to_node.
-BACKEND_NODES = ('dragonseye', 'pi5', 'oracle')   # the compute rocks wired as r=1,2,3
+# DYNAMIC BACKEND (Brian 2026-09-30, supports new nodes like the phone): the experiment
+# backend is DISCOVERED, not hardcoded — r from the canonical r-map, node chosen per r
+# from the ONLINE compute nodes. Candidates = LATTICE :8091 compute entries + any node
+# self-registered in redis `cadence:tworocks:node-urls` ({node_or_hwid: url}, written by
+# a new host such as the phone on boot). Health-aware failover, one node per r, cached,
+# sealed fallback. Nodes not in the canonical r-map are skipped (never guess an r).
+_FALLBACK_R2N = {1.0: 'dragonseye', 2.0: 'pi5', 3.0: 'oracle'}
+_BACKEND_CACHE = {'map': None, 't': 0.0}
+_BACKEND_TTL = 30
+
+def _candidate_urls():
+    cands = {}
+    for n, info in LATTICE.items():
+        if str(info.get('url', '')).endswith(':8091'):     # compute nodes only (skip coil :8093)
+            cands[n] = info['url']
+    try:
+        raw = cr_rmap._conn().get('cadence:tworocks:node-urls')
+        if raw:
+            for n, u in json.loads(raw).items():            # self-registered hosts (e.g. the phone)
+                if isinstance(u, str):
+                    cands[n] = u
+    except Exception:
+        pass
+    return cands
 
 def _r_to_node():
-    """{r: node} for the experiment backend, r sourced from the canonical r-map."""
+    """{r: node} experiment backend — discovered: r from canonical r-map, one ONLINE
+    node per r (LATTICE order preferred, self-registered as failover). Cached 30s;
+    sealed fallback if discovery yields nothing."""
+    now = time.time()
+    if _BACKEND_CACHE['map'] is not None and now - _BACKEND_CACHE['t'] < _BACKEND_TTL:
+        return _BACKEND_CACHE['map']
     m = {}
-    for n in BACKEND_NODES:
-        try:
-            m[float(cr_rmap.get_r(n))] = n
-        except Exception:
-            pass
-    return m or {1.0: 'dragonseye', 2.0: 'pi5', 3.0: 'oracle'}   # last-resort fallback
+    try:
+        cands = list(_candidate_urls().items())
+        mp = cr_rmap.get_map()
+        def _rof(n):
+            h = cr_rmap.ALIASES.get(n, n)
+            return float(mp[h]) if h in mp else None
+        def _alive(item):
+            n, u = item
+            try: return (n, requests.get(u + '/api/v1/health', timeout=(1.5, 3)).ok)
+            except Exception: return (n, False)
+        with _cf.ThreadPoolExecutor(max_workers=8) as ex:
+            checked = list(ex.map(_alive, cands))
+        for n, ok in checked:
+            if not ok:
+                continue
+            r = _rof(n)
+            if r is not None:
+                m.setdefault(r, n)                          # first ONLINE node at this r wins
+    except Exception:
+        m = {}
+    if not m:
+        m = dict(_FALLBACK_R2N)
+    _BACKEND_CACHE['map'] = m
+    _BACKEND_CACHE['t'] = now
+    return m
 
 def _registry_reconcile():
     """LATTICE r-values vs the canonical r-map — surfaces drift instead of hiding it.
@@ -780,7 +828,8 @@ def backend():
                          'YOUR commanded geometry (computed from input, NOT measured); every field is labeled '
                          'measured-vs-computed in result.rocks[*].provenance',
         'registry': {
-            'r_source': 'canonical r-map (redis cadence:tworocks:r-map) via cr_rmap; cached 60s, falls back to sealed SEED if redis down',
+            'r_source': 'DYNAMIC: r from canonical r-map (cr_rmap); backend node discovered per r from ONLINE compute nodes (LATTICE :8091 + self-registered cadence:tworocks:node-urls), health-aware failover, cached 30s, sealed fallback',
+            'self_register': 'a new compute node auto-joins the backend once it is (1) in the r-map and (2) listed in redis cadence:tworocks:node-urls as {hwid: "http://host:8091"}',
             'r_to_node': {str(r): n for r, n in sorted(r_to_node.items())},
             'lattice_vs_canonical_mismatches': _registry_reconcile() or None,
         },
