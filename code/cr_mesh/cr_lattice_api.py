@@ -77,54 +77,91 @@ _FALLBACK_R2N = {1.0: 'dragonseye', 2.0: 'pi5', 3.0: 'oracle'}
 _BACKEND_CACHE = {'map': None, 't': 0.0}
 _BACKEND_TTL = 30
 
-def _candidate_urls():
-    cands = {}
-    for n, info in LATTICE.items():
-        if str(info.get('url', '')).endswith(':8091'):     # compute nodes only (skip coil :8093)
-            cands[n] = info['url']
+# Shared NODE REGISTRY (URL + optional r): LATTICE + self-registered redis TTL keys
+# cadence:tworocks:node-url:<hwid> = {node,url,r,ts} (a new host such as the phone writes
+# these via cr_node_register.py; TTL drops a node that stops refreshing). Used by BOTH
+# call_node (URL resolution) and the dynamic backend, so a self-registered node is
+# selectable AND reachable. Cached 30s.
+_REG_CACHE = {'reg': None, 't': 0.0}
+_REG_TTL = 30
+
+def _node_registry():
+    now = time.time()
+    if _REG_CACHE['reg'] is not None and now - _REG_CACHE['t'] < _REG_TTL:
+        return _REG_CACHE['reg']
+    reg = {n: {'url': info.get('url', ''), 'r': None} for n, info in LATTICE.items()}
     try:
-        raw = cr_rmap._conn().get('cadence:tworocks:node-urls')
-        if raw:
-            for n, u in json.loads(raw).items():            # self-registered hosts (e.g. the phone)
-                if isinstance(u, str):
-                    cands[n] = u
+        rc = cr_rmap._conn()
+        for k in rc.scan_iter('cadence:tworocks:node-url:*'):
+            try:
+                e = json.loads(rc.get(k) or '{}')
+                u = e.get('url')
+                if isinstance(u, str) and u:
+                    reg[e.get('node') or k.split(':')[-1]] = {'url': u, 'r': e.get('r')}
+            except Exception:
+                pass
     except Exception:
         pass
-    return cands
+    _REG_CACHE['reg'] = reg
+    _REG_CACHE['t'] = now
+    return reg
 
-def _r_to_node():
-    """{r: node} experiment backend — discovered: r from canonical r-map, one ONLINE
-    node per r (LATTICE order preferred, self-registered as failover). Cached 30s;
-    sealed fallback if discovery yields nothing."""
-    now = time.time()
-    if _BACKEND_CACHE['map'] is not None and now - _BACKEND_CACHE['t'] < _BACKEND_TTL:
-        return _BACKEND_CACHE['map']
+def _candidate_urls():
+    """{ident: {'url','r'}} — compute nodes only (:8091; the coil on :8093 is excluded)."""
+    return {ident: c for ident, c in _node_registry().items()
+            if str(c.get('url', '')).endswith(':8091')}
+
+def _refresh_backend():
+    """Recompute {r: node} from ONLINE compute nodes (blocking health checks) and cache it.
+    Runs in a BACKGROUND thread so no request ever blocks on discovery (a slow/remote node
+    like oracle must not add seconds to every call). One ONLINE node per r; r from the
+    self-registered entry or the canonical r-map; sealed fallback if nothing resolves."""
     m = {}
     try:
-        cands = list(_candidate_urls().items())
+        cands = list(_candidate_urls().items())             # [(ident, {'url','r'}), ...]
         mp = cr_rmap.get_map()
-        def _rof(n):
-            h = cr_rmap.ALIASES.get(n, n)
+        def _rof(ident, given):
+            if given is not None:
+                try: return float(given)
+                except Exception: return None
+            h = cr_rmap.ALIASES.get(ident, ident)
             return float(mp[h]) if h in mp else None
         def _alive(item):
-            n, u = item
-            try: return (n, requests.get(u + '/api/v1/health', timeout=(1.5, 3)).ok)
-            except Exception: return (n, False)
+            ident, c = item
+            try: return (ident, c, requests.get(c['url'] + '/api/v1/health', timeout=(1.5, 6)).ok)
+            except Exception: return (ident, c, False)
         with _cf.ThreadPoolExecutor(max_workers=8) as ex:
             checked = list(ex.map(_alive, cands))
-        for n, ok in checked:
-            if not ok:
-                continue
-            r = _rof(n)
-            if r is not None:
-                m.setdefault(r, n)                          # first ONLINE node at this r wins
+        for ident, c, ok in checked:
+            if ok:
+                r = _rof(ident, c.get('r'))
+                if r is not None:
+                    m.setdefault(r, ident)                  # first ONLINE node at this r wins
     except Exception:
         m = {}
-    if not m:
-        m = dict(_FALLBACK_R2N)
-    _BACKEND_CACHE['map'] = m
-    _BACKEND_CACHE['t'] = now
-    return m
+    _BACKEND_CACHE['map'] = m or dict(_FALLBACK_R2N)
+    _BACKEND_CACHE['t'] = time.time()
+
+_BACKEND_REFRESH_STARTED = False
+_BACKEND_REFRESH_GUARD = threading.Lock()
+
+def _r_to_node():
+    """{r: node} experiment backend — served INSTANTLY from cache (never blocks on health
+    checks). A daemon thread refreshes it every TTL from ONLINE compute nodes; until the
+    first refresh lands, the sealed fallback is served. Self-registered nodes (e.g. the
+    phone) join on the next refresh."""
+    global _BACKEND_REFRESH_STARTED
+    if not _BACKEND_REFRESH_STARTED:
+        with _BACKEND_REFRESH_GUARD:
+            if not _BACKEND_REFRESH_STARTED:
+                _BACKEND_REFRESH_STARTED = True
+                def _loop():
+                    while True:
+                        try: _refresh_backend()
+                        except Exception: pass
+                        time.sleep(_BACKEND_TTL)
+                threading.Thread(target=_loop, daemon=True).start()
+    return _BACKEND_CACHE['map'] or dict(_FALLBACK_R2N)
 
 def _registry_reconcile():
     """LATTICE r-values vs the canonical r-map — surfaces drift instead of hiding it.
@@ -167,10 +204,12 @@ def coupling(r_a, r_b, dphi_rad):
 
 
 def call_node(name, method, path, body=None, timeout=TIMEOUT):
-    """Call one node's API. Returns (name, response_dict_or_error)."""
-    if name not in LATTICE:
+    """Call one node's API. Returns (name, response_dict_or_error).
+    URL resolves from the node registry (LATTICE + self-registered nodes)."""
+    base = (_node_registry().get(name) or {}).get('url') or LATTICE.get(name, {}).get('url')
+    if not base:
         return (name, {'error': 'unknown node'})
-    url = LATTICE[name]['url'] + path
+    url = base + path
     try:
         kwargs = {'timeout': timeout}
         if body is not None:
@@ -828,8 +867,8 @@ def backend():
                          'YOUR commanded geometry (computed from input, NOT measured); every field is labeled '
                          'measured-vs-computed in result.rocks[*].provenance',
         'registry': {
-            'r_source': 'DYNAMIC: r from canonical r-map (cr_rmap); backend node discovered per r from ONLINE compute nodes (LATTICE :8091 + self-registered cadence:tworocks:node-urls), health-aware failover, cached 30s, sealed fallback',
-            'self_register': 'a new compute node auto-joins the backend once it is (1) in the r-map and (2) listed in redis cadence:tworocks:node-urls as {hwid: "http://host:8091"}',
+            'r_source': 'DYNAMIC: backend node discovered per r from ONLINE compute nodes (LATTICE :8091 + self-registered cadence:tworocks:node-url:* TTL keys); r from the entry or the canonical r-map (cr_rmap); health-aware failover, cached 30s, sealed fallback',
+            'self_register': 'a new compute node auto-joins by writing redis cadence:tworocks:node-url:<hwid> = {"node":..,"url":"http://host:8091","r":3} with a TTL (see cr_node_register.py); r from that entry or the canonical r-map',
             'r_to_node': {str(r): n for r, n in sorted(r_to_node.items())},
             'lattice_vs_canonical_mismatches': _registry_reconcile() or None,
         },
