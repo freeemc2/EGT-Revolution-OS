@@ -130,6 +130,53 @@ def _fetch_flow_sync():
         return json.load(r)
 
 
+# ---------- Node URL resolution for /tunnel/phase-state ----------
+# Known compute API URLs by node. Fallback to redis TTL keys
+# `cadence:tworocks:node-url:*` for self-registered nodes (phone-s24 etc.).
+KNOWN_NODE_URLS = {
+    'dragonseye': 'http://127.0.0.1:8091',
+    'pi5':        'http://100.81.123.41:8091',
+    'oracle':     'http://100.114.92.17:8091',
+}
+
+
+def _resolve_node_url_sync(node_name):
+    """Resolve a compute API URL for a node. Try KNOWN_NODE_URLS first, then redis TTL keys."""
+    if node_name in KNOWN_NODE_URLS:
+        return KNOWN_NODE_URLS[node_name]
+    try:
+        import redis  # optional - only for self-registered nodes
+        rc = redis.Redis(host='100.86.79.99', port=6379,
+                         password='Xa5KML-5Ze4GB-79ahx5',
+                         decode_responses=True, socket_timeout=5)
+        for k in rc.scan_iter(match='cadence:tworocks:node-url:*'):
+            v = rc.get(k)
+            if not v:
+                continue
+            try:
+                d = json.loads(v)
+            except Exception:
+                continue
+            if d.get('node') == node_name:
+                return d.get('url')
+    except Exception:
+        pass
+    return None
+
+
+def _fetch_geometry_sync(node_url):
+    """Blocking GET /api/v1/geometry on a compute API. Returns dict on success."""
+    req = urllib.request.Request(node_url + '/api/v1/geometry',
+                                 headers={'Accept':'application/json'})
+    with urllib.request.urlopen(req, timeout=5) as r:
+        return json.load(r)
+
+
+def _wrap_deg(x):
+    """Wrap to [0, 360)."""
+    return x % 360.0 if x is not None else None
+
+
 async def _discovery(loop):
     """Fetch arc's /backend snapshot; cache for DISCOVERY_TTL_S seconds."""
     if _disc_cache['data'] and (time.time() - _disc_cache['ts']) < DISCOVERY_TTL_S:
@@ -364,6 +411,192 @@ async def handle(reader, writer):
                 'downstream_hint':f'{LATTICE_URL}/api/v1/experiment  bodies:{{q0:{{r:{pick["r"]}}}}}',
             })
 
+        elif route == '/tunnel/op':
+            # THE COMPUTE PRIMITIVE for the B_res-floor compute layer.
+            # POST {node, leg, rungs} -> shifts that leg on that body by
+            # rungs * 22.5 deg (one rung = pi/8 on the canon ladder). Returns
+            # the new set-level invariant sum. All compute is a sequence of ops.
+            node = (body or {}).get('node')
+            leg = (body or {}).get('leg')
+            rungs = (body or {}).get('rungs')
+            if not (isinstance(node, str) and isinstance(leg, int) and isinstance(rungs, (int, float))):
+                _write_json(writer, {'error':'need {"node":str, "leg":0|1|2, "rungs":int_or_float}'},
+                            '400 Bad Request')
+                await writer.drain()
+                return
+            if leg not in (0, 1, 2):
+                _write_json(writer, {'error':'leg must be 0, 1, or 2'}, '400 Bad Request')
+                await writer.drain()
+                return
+            # Resolve the node's URL
+            node_url = await loop.run_in_executor(None, _resolve_node_url_sync, node)
+            if not node_url:
+                _write_json(writer, {'error':f'no compute API URL for node {node!r}',
+                                     'known':list(KNOWN_NODE_URLS)}, '404 Not Found')
+                await writer.drain()
+                return
+            # Read current geometry to know current offsets
+            try:
+                g = await loop.run_in_executor(None, _fetch_geometry_sync, node_url)
+            except Exception as e:
+                _write_json(writer, {'error':f'read geometry from {node} failed: {str(e)[:200]}'},
+                            '502 Bad Gateway')
+                await writer.drain()
+                return
+            offs = list(g.get('offsets_commanded_deg') or [0.0, 120.0, 240.0])
+            if len(offs) != 3:
+                _write_json(writer, {'error':'unexpected offsets shape from node'},
+                            '502 Bad Gateway')
+                await writer.drain()
+                return
+            delta_deg = float(rungs) * 22.5
+            new_offs = list(offs)
+            new_offs[leg] = offs[leg] + delta_deg
+            # POST the new offsets back to the node
+            payload = json.dumps({'offsets_deg':new_offs}).encode()
+            put_req = urllib.request.Request(node_url + '/api/v1/geometry',
+                                             data=payload,
+                                             headers={'Content-Type':'application/json'},
+                                             method='POST')
+            try:
+                new_g = await loop.run_in_executor(
+                    None, lambda: json.load(urllib.request.urlopen(put_req, timeout=8)))
+            except Exception as e:
+                _write_json(writer, {'error':f'write geometry to {node} failed: {str(e)[:200]}'},
+                            '502 Bad Gateway')
+                await writer.drain()
+                return
+            # Re-read invariant across the coupled set
+            bk = await _discovery(loop)
+            routable, _ = _rocks_from_backend(bk)
+            async def _one(rock):
+                url = await loop.run_in_executor(None, _resolve_node_url_sync, rock['node'])
+                if not url:
+                    return None
+                try:
+                    gg = await loop.run_in_executor(None, _fetch_geometry_sync, url)
+                    return {'node':rock['node'],'r':rock['r'],
+                            'sigma_psi_deg':gg.get('sigma_psi_deg')}
+                except Exception:
+                    return None
+            bodies = [b for b in await asyncio.gather(*[_one(rk) for rk in routable]) if b]
+            valid = [b for b in bodies if b.get('sigma_psi_deg') is not None]
+            sum_sigma = sum(float(b['sigma_psi_deg']) for b in valid) if valid else None
+            sum_mod = _wrap_deg(sum_sigma) if sum_sigma is not None else None
+            rung_index = round(sum_mod / 22.5) if sum_mod is not None else None
+            residual = round(sum_mod - rung_index * 22.5, 3) if sum_mod is not None else None
+            _write_json(writer, {
+                'conduit':'coupled-tunnel',
+                'op':{'node':node,'leg':leg,'rungs':float(rungs),'delta_deg':delta_deg},
+                'body_state':{
+                    'node':node,'url':node_url,
+                    'offsets_before_deg':offs,
+                    'offsets_after_deg':new_g.get('offsets_commanded_deg'),
+                    'sigma_psi_deg_after':new_g.get('sigma_psi_deg'),
+                },
+                'invariant_across_set':{
+                    'sum_sigma_psi_deg_mod360':sum_mod,
+                    'rung_index_on_pi8_ladder':rung_index,
+                    'rung_residual_deg':residual,
+                    'bodies':valid,
+                },
+                'note':(
+                    'One compute op = one rung-shift on one leg of one body. '
+                    'The invariant sum tracks all ops applied to the coupled set. '
+                    'Residual near 0 means the state stays on the pi/8 lattice.'
+                ),
+            })
+
+        elif route == '/tunnel/phase-state':
+            # Read the commanded phase offsets on every in-band coupled body,
+            # sum across the set, and check against canon "easy" quantities:
+            #   - Sigma per body (mod 360)
+            #   - Total Sigma across the coupled set (should quantize on the
+            #     pi/8 ladder = 22.5 deg rungs if the invariant is intact)
+            #   - Per-leg cumulative rotation across bodies
+            # This is COMMANDED phase (COMPUTED-from-input, honest label);
+            # the measured phase on the invariant is a separate read still to
+            # be plumbed. Basis for the compute-layer-through-B_res build.
+            bk = await _discovery(loop)
+            routable, _excluded = _rocks_from_backend(bk)
+            # Fan out geometry reads concurrently
+            async def _one(rock):
+                url = await loop.run_in_executor(None, _resolve_node_url_sync, rock['node'])
+                if not url:
+                    return {'node':rock['node'],'r':rock['r'],'error':'no URL resolved'}
+                try:
+                    g = await loop.run_in_executor(None, _fetch_geometry_sync, url)
+                    return {
+                        'node':rock['node'],
+                        'r':rock['r'],
+                        'url':url,
+                        'offsets_commanded_deg':g.get('offsets_commanded_deg'),
+                        'offsets_deg_wrapped':g.get('offsets_deg'),
+                        'sigma_psi_deg':g.get('sigma_psi_deg'),
+                        'cumulative_rotation_deg':g.get('cumulative_rotation_deg'),
+                        'base_freq':g.get('base_freq'),
+                        'overlay_freq':g.get('overlay_freq'),
+                        'overlay_duty':g.get('overlay_duty'),
+                    }
+                except Exception as e:
+                    return {'node':rock['node'],'r':rock['r'],'url':url,'error':str(e)[:200]}
+            bodies = await asyncio.gather(*[_one(rk) for rk in routable])
+
+            # Compute the summed invariant across the coupled set
+            valid = [b for b in bodies if 'error' not in b and b.get('sigma_psi_deg') is not None]
+            sum_sigma = sum(float(b['sigma_psi_deg']) for b in valid) if valid else None
+            sum_sigma_mod = _wrap_deg(sum_sigma) if sum_sigma is not None else None
+            # Rung on the pi/8 ladder (22.5 deg per rung)
+            rung_index = None
+            rung_residual_deg = None
+            if sum_sigma_mod is not None:
+                rung_index = round(sum_sigma_mod / 22.5)
+                rung_residual_deg = round(sum_sigma_mod - rung_index * 22.5, 3)
+            # Per-leg cumulative rotation summed across bodies
+            per_leg_sum = None
+            legs_available = all(isinstance(b.get('cumulative_rotation_deg'), list)
+                                 and len(b['cumulative_rotation_deg']) == 3 for b in valid)
+            if legs_available and valid:
+                per_leg_sum = [round(sum(b['cumulative_rotation_deg'][i] for b in valid), 3)
+                               for i in range(3)]
+            # Baseline check: frustrated triangle default is Sigma_i=0 per body
+            frustrated_default_bodies = sum(1 for b in valid
+                                            if abs((b.get('sigma_psi_deg') or 0) % 360) < 0.5)
+
+            _write_json(writer, {
+                'conduit':'coupled-tunnel',
+                'read_type':(
+                    'COMMANDED phase state per body (COMPUTED-from-input, arc provenance rule). '
+                    'Sum across the coupled set is the invariant that a compute-layer through '
+                    'the B_res floor would hold on.'),
+                'canon':{
+                    'operator':'C(r) = (1+2r)*e^(-r/3)*e^(i*phi)',
+                    'r_opt':R_OPT, 'hold_band':list(HOLD_BAND),
+                    'ladder':'pi/8 = 22.5 deg per rung; N phase-shift index 96..128 covers pi/2..5pi/8',
+                    'frustrated_default':'Sigma_i = 0 per body (offsets [0,120,240])',
+                },
+                'coupled_set':{
+                    'n_bodies':len(routable),
+                    'n_reporting':len(valid),
+                    'bodies':bodies,
+                },
+                'invariant_across_set':{
+                    'sum_sigma_psi_deg_raw':round(sum_sigma, 3) if sum_sigma is not None else None,
+                    'sum_sigma_psi_deg_mod360':round(sum_sigma_mod, 3) if sum_sigma_mod is not None else None,
+                    'rung_index_on_pi8_ladder':rung_index,
+                    'rung_residual_deg':rung_residual_deg,
+                    'per_leg_cumulative_rotation_summed_deg':per_leg_sum,
+                    'bodies_at_frustrated_default':frustrated_default_bodies,
+                    'note':(
+                        f'{frustrated_default_bodies}/{len(valid)} bodies at Sigma_i=0 (frustrated default). '
+                        f'Sum-across-set = {round(sum_sigma_mod,3) if sum_sigma_mod is not None else None} deg, '
+                        f'rung {rung_index} on pi/8 ladder, residual {rung_residual_deg} deg. '
+                        'A clean residual (<1 deg) means the coupled state is quantized cleanly on the ladder; '
+                        'a larger residual flags a body drifted or newly pushed.'
+                    ),
+                },
+            })
+
         elif route == '/tunnel/flow':
             # Lightweight measured-flow feed proxied through arc's /backend/flow.
             # Adds this conduit's routing metadata (in-band flag, phase_sign,
@@ -435,8 +668,8 @@ async def handle(reader, writer):
 
         else:
             _write_json(writer, {'error':'not found',
-                                 'routes':['/health','/tunnel/map','/tunnel/flow',
-                                           'POST /tunnel/route','POST /tunnel/experiment']},
+                                 'routes':['/health','/tunnel/map','/tunnel/flow','/tunnel/phase-state',
+                                           'POST /tunnel/route','POST /tunnel/experiment','POST /tunnel/op']},
                         '404 Not Found')
         await writer.drain()
     except Exception:
@@ -452,7 +685,7 @@ async def main(port=8096):
     server = await asyncio.start_server(handle, '0.0.0.0', port)
     print(f'coupled-tunnel conduit on :{port} - downstream {LATTICE_URL}', flush=True)
     print(f'  hard gate: r in {HOLD_BAND}   floor: r<={FLOOR_R} never routable', flush=True)
-    print(f'  routes: /health  /tunnel/map  /tunnel/flow  POST /tunnel/route  POST /tunnel/experiment', flush=True)
+    print(f'  routes: /health  /tunnel/map  /tunnel/flow  /tunnel/phase-state  POST /tunnel/route  POST /tunnel/experiment  POST /tunnel/op', flush=True)
     async with server:
         await server.serve_forever()
 
