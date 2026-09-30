@@ -76,6 +76,7 @@ LATTICE = {
 _FALLBACK_R2N = {1.0: 'dragonseye', 2.0: 'pi5', 3.0: 'oracle'}
 _BACKEND_CACHE = {'map': None, 't': 0.0}
 _BACKEND_TTL = 30
+_FLOW_SNAPSHOT = {}   # node -> latest MEASURED-flow snapshot; updated on each /experiment run, served by /api/v1/backend/flow (the always-on feed aria's conduit routes on)
 
 # Shared NODE REGISTRY (URL + optional r): LATTICE + self-registered redis TTL keys
 # cadence:tworocks:node-url:<hwid> = {node,url,r,ts} (a new host such as the phone writes
@@ -795,6 +796,15 @@ def experiment():
             'state_raw': s,
             'trajectory_raw': t,
         }
+        # update the always-on measured-flow feed snapshot for this rock (cat: aria's feed)
+        _FLOW_SNAPSHOT[node] = {
+            'node': node, 'r': float(spec.get('r')),
+            'latest_flow_dt_ms': t.get('trajectory_dt_ms'),
+            'flow_mean_ms': t.get('flow_mean_ms'), 'flow_range_ms': t.get('flow_range_ms'),
+            'cv_rel': s.get('cv_rel'), 'below_floor': s.get('locked'),
+            'node_status': 'ok' if node_ok else 'unavailable',
+            'as_of_us': int(time.time() * 1e6),
+        }
 
     return jsonify({
         'backend': 'egt-lattice',
@@ -874,6 +884,7 @@ def backend():
         },
         'access': 'POST /api/v1/signup {"name":...} -> api_key; then send X-API-Key on run endpoints. Per-key rate limits apply; loopback is trusted-internal.',
         'submit': 'POST /api/v1/experiment  {"experiment": {"bodies": {"q0": {"r": 1, "phi_deg": 0}}, "seconds": 15}}',
+        'flow_feed': 'GET /api/v1/backend/flow — always-on per-rock MEASURED snapshot (cached, no rig run); for routing/standing-state reads',
     })
 
 
@@ -904,6 +915,23 @@ def account_usage():
     if not u:
         return jsonify({'error': 'invalid or missing API key'}), 401
     return jsonify(u)
+
+
+@app.route('/api/v1/backend/flow', methods=['GET'])
+def backend_flow():
+    """Always-on MEASURED-flow feed (aria's conduit routes on this).
+    Latest per-rock measured snapshot from the most recent /experiment run per rock —
+    cached, refreshes on the next run; does NOT trigger a rig run. `as_of_us` shows
+    freshness. conserved_sigma_psi_deg (computed-from-input) is deliberately absent —
+    this is the measured read only. Open (loopback conduit reads it keyless)."""
+    return jsonify({
+        'backend': 'egt-lattice',
+        'read_type': 'MEASURED standing below-floor read per rock (fluid flow + CV lock), no '
+                     'collapse; cached from the latest /experiment run, refreshes on the next',
+        'rocks': _FLOW_SNAPSHOT,
+        'note': 'lightweight routing feed — for a FRESH deep read call POST /api/v1/experiment. '
+                'A rock is absent until an experiment has run it; as_of_us = last update (us).',
+    })
 
 
 if __name__ == '__main__':
