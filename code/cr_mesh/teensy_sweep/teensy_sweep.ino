@@ -21,12 +21,30 @@
 //   NOTE: v1 header claimed "drive winding A, sense winding B, runner floating" —
 //         that was STALE/wrong; the runner has always been the A0 sense wire.
 //
+// *** WIRING SWAP 2026-08-23 (Brian) — THE PINOUT ABOVE IS NO LONGER CURRENT ***
+// For the pair-separation experiment the roles were SWAPPED, and every result
+// since (8/8 EGT alignment, observer-out re-baseline, CHSH runs) was measured on
+// the SWAPPED topology. Physical wiring as of 2026-08-27:
+//   pin 3 --- 220R --- RUNNER --- GND                      [runner is the DRIVE]
+//   pair-A -> A0 (adc0)   with 10k/10k mid-rail bias       [sense A]
+//   pair-B -> A1 (adc1)   with 10k/10k mid-rail bias       [sense B]
+// So "L <freq>" drives the RUNNER and senses PAIR-A; "C <freq>" drives the runner
+// and reads both pair wires at once. Pin constants below are unchanged — only the
+// physical wire roles moved. See journal "PAIR-SEPARATION EXPERIMENT" 2026-08-23.
+//
 // Serial protocol (115200+, USB):
 //   "P"                      -> "R PONG sweep <cpu_mhz>"
 //   "S <f0> <f1> <points>"   -> log sweep, streams "F <freq_hz> <phase_deg> <mag>"
 //                               then "R SWEEPDONE"
 //   "L <freq_hz>"            -> lock mode: continuous "T <freq> <phase_deg> <mag>"
 //                               ~5 lines/s until any byte received -> "R LOCKED off"
+//   "C <freq_hz>"            -> DUAL-channel lock (pair-separation, 2026-08-23):
+//                               reads pair-A (A0/adc0) + pair-B (A1/adc1) at once,
+//                               streams "TC <freq> <phA> <mgA> <phB> <mgB> <corr> <dphase>"
+//                               corr = Pearson of the two wire waveforms (-1..+1).
+//   "G <f1> <f2> [amp2]"    -> GENTLE two-tone + dual-channel: drives f1 (full) + f2
+//                               (gentle, default amp2=0.3), reads both pair wires locked to f1.
+//                               streams "TG <f1> <f2> <phA> <mgA> <phB> <mgB> <corr> <dphase> <phHiA> <mgHiA>"
 //
 // Phase convention: positive = response lags drive. Integration: 40 ms or
 // >= 20 cycles per point, whichever is longer.
@@ -97,6 +115,22 @@ volatile double accI_beat = 0.0, accQ_beat = 0.0;
 volatile float driveAmp = 1.0f;
 volatile float sd_acc = 0.0f;
 
+// --- dual-ADC pair-separation (2026-08-23) --------------------------------
+// The twisted pair was always read TOGETHER (averaged) — which hides any
+// correlation between its two wires. Now separated: RUNNER drives; pair-A -> A0
+// (adc0), pair-B -> A1 (adc1). This reads BOTH wires at (nearly) the same instant
+// via the two independent ADC modules, lock-in each vs the same drive reference,
+// AND accumulates the raw waveform cross/auto products so we get the direct
+// Pearson correlation between the two wires (-1..+1). Single-tone drive only.
+// NOTE at flash time: verify A1 is a valid pin on adc1 (adc->adc1). If magB reads
+// stuck/garbage, change SENSE_PIN_2 to another ADC1-capable pin (e.g. A2 or A3).
+const int SENSE_PIN_2 = A1;
+volatile int dcOffset1 = 2048;
+volatile bool dualMode = false;
+volatile double accI_B = 0.0, accQ_B = 0.0;                 // pair-B lock-in
+volatile double accAB = 0.0, accAA = 0.0, accBB = 0.0;      // raw waveform products
+volatile double accSumA = 0.0, accSumB = 0.0;               // running sums for windowed Pearson
+
 void buildPatterns() {
   float w[PAT_N], mean = 0;
   for (int r = 0; r < PAT_N; r++) { w[r] = (1.0f + 2.0f * r) * expf(-r / 3.0f); mean += w[r]; }
@@ -133,6 +167,13 @@ void isr2() {
     accI_lo   += s * cosf(phaseLo);   accQ_lo   += s * sinf(phaseLo);
     accI_hi   += s * cosf(phaseHi);   accQ_hi   += s * sinf(phaseHi);
     accI_beat += s * cosf(phaseBeat); accQ_beat += s * sinf(phaseBeat);
+    if (dualMode) {
+      float sB = (float)(adc->adc1->analogReadContinuous() - dcOffset1);
+      float coLo = cosf(phaseLo), siLo = sinf(phaseLo);
+      accI_B += sB * coLo;  accQ_B += sB * siLo;
+      accAB  += s * sB;  accAA += s * s;  accBB += sB * sB;
+      accSumA += s;  accSumB += sB;
+    }
     nsamp++;
   }
   phaseLo   += dphiLo;   if (phaseLo   >= TWO_PI_F) phaseLo   -= TWO_PI_F;
@@ -152,9 +193,16 @@ void isr() {
   }
   int v = adc->adc0->analogReadContinuous();
   if (acquiring) {
-    float s = (float)(v - dcOffset);
-    accI += s * cosf(phase);
-    accQ += s * sinf(phase);
+    float sA = (float)(v - dcOffset);
+    float co = cosf(phase), si = sinf(phase);
+    accI += sA * co;
+    accQ += sA * si;
+    if (dualMode) {   // read pair-B (A1) same instant: lock-in + raw correlation
+      float sB = (float)(adc->adc1->analogReadContinuous() - dcOffset1);
+      accI_B += sB * co;  accQ_B += sB * si;
+      accAB  += sA * sB;  accAA  += sA * sA;  accBB += sB * sB;
+      accSumA += sA;  accSumB += sB;
+    }
     nsamp++;
   }
   phase += dphi;
@@ -188,10 +236,15 @@ void setFreq(float f) {
 }
 
 void measureDC() {
-  // rough DC bias of the sense line with drive off
-  long acc = 0;
-  for (int i = 0; i < 256; i++) { acc += adc->adc0->analogReadContinuous(); delayMicroseconds(20); }
-  dcOffset = acc / 256;
+  // rough DC bias of BOTH sense lines with drive off
+  long acc0 = 0, acc1 = 0;
+  for (int i = 0; i < 256; i++) {
+    acc0 += adc->adc0->analogReadContinuous();
+    acc1 += adc->adc1->analogReadContinuous();
+    delayMicroseconds(20);
+  }
+  dcOffset  = acc0 / 256;
+  dcOffset1 = acc1 / 256;
 }
 
 // integration time (ms) — settable via I command; long = narrow lock-in bandwidth
@@ -213,6 +266,78 @@ void point(float f, float *ph_deg, float *mag) {
   if (p < 0) p += 360.0f;
   *ph_deg = p;
   *mag = (n > 0) ? sqrtf((float)(I * I + Q * Q)) / (float)n : 0.0f;
+}
+
+// dual-CHANNEL lock-in (2026-08-23): pair-A (A0) + pair-B (A1) at once under a
+// single-tone drive, plus their raw waveform correlation. corr = Pearson of the
+// two DC-removed waveforms at zero lag: +1 = the two wires track identically,
+// 0 = independent, -1 = opposite. This is the "do the two wires share state" test.
+void pointDual(float f, float *phA, float *mgA, float *phB, float *mgB,
+               float *corr, float *dphase) {
+  setFreq(f);
+  float settle_s = max(20.0f / f, 0.020f);
+  delayMicroseconds((uint32_t)(settle_s * 1e6f));
+  float integ_s = max(40.0f / f, integ_ms / 1000.0f);
+  noInterrupts();
+  accI = accQ = accI_B = accQ_B = 0; accAB = accAA = accBB = 0; accSumA = accSumB = 0;
+  nsamp = 0; dualMode = true; acquiring = true;
+  interrupts();
+  delayMicroseconds((uint32_t)(integ_s * 1e6f));
+  noInterrupts(); acquiring = false; dualMode = false;
+  double Ia = accI, Qa = accQ, Ib = accI_B, Qb = accQ_B;
+  double AB = accAB, AA = accAA, BB = accBB;
+  double sA_sum = accSumA, sB_sum = accSumB; uint32_t n = nsamp;
+  interrupts();
+  float pa = atan2f((float)Qa, (float)Ia) * 180.0f / 3.14159265f; if (pa < 0) pa += 360.0f;
+  float pb = atan2f((float)Qb, (float)Ib) * 180.0f / 3.14159265f; if (pb < 0) pb += 360.0f;
+  *phA = pa; *phB = pb;
+  *mgA = (n > 0) ? sqrtf((float)(Ia * Ia + Qa * Qa)) / (float)n : 0.0f;
+  *mgB = (n > 0) ? sqrtf((float)(Ib * Ib + Qb * Qb)) / (float)n : 0.0f;
+  double mA = sA_sum / n, mB = sB_sum / n;
+  double cov = AB - n * mA * mB;
+  double vA  = AA - n * mA * mA;
+  double vB  = BB - n * mB * mB;
+  *corr = (vA > 0.0 && vB > 0.0) ? (float)(cov / sqrt(vA * vB)) : 0.0f;
+  float d = pa - pb; while (d > 180.0f) d -= 360.0f; while (d <= -180.0f) d += 360.0f;
+  *dphase = d;
+}
+
+// two-tone + dual-CHANNEL: drive f1+f2, read both pair wires, report correlation.
+// lock-in channel A against flo, channel B against flo (same reference).
+void pointDual2(float flo, float fhi, float *phA, float *mgA, float *phB, float *mgB,
+                float *corr, float *dphase, float *phHiA, float *mgHiA) {
+  setFreq2(flo, fhi);
+  float fmin = (flo < fhi) ? flo : fhi;
+  float settle_s = max(20.0f / fmin, 0.020f);
+  delayMicroseconds((uint32_t)(settle_s * 1e6f));
+  float integ_s = max(40.0f / fmin, integ_ms / 1000.0f);
+  noInterrupts();
+  accI = accQ = accI_B = accQ_B = 0; accAB = accAA = accBB = 0; accSumA = accSumB = 0;
+  accI_lo = accQ_lo = accI_hi = accQ_hi = 0;
+  nsamp = 0; dualMode = true; acquiring = true;
+  interrupts();
+  delayMicroseconds((uint32_t)(integ_s * 1e6f));
+  noInterrupts(); acquiring = false; dualMode = false;
+  double Ia = accI_lo, Qa = accQ_lo, Ib = accI_B, Qb = accQ_B;
+  double Ih = accI_hi, Qh = accQ_hi;
+  double AB = accAB, AA = accAA, BB = accBB;
+  double sA_sum = accSumA, sB_sum = accSumB; uint32_t n = nsamp;
+  interrupts();
+  float pa = atan2f((float)Qa, (float)Ia) * 180.0f / 3.14159265f; if (pa < 0) pa += 360.0f;
+  float pb = atan2f((float)Qb, (float)Ib) * 180.0f / 3.14159265f; if (pb < 0) pb += 360.0f;
+  *phA = pa; *phB = pb;
+  *mgA = (n > 0) ? sqrtf((float)(Ia * Ia + Qa * Qa)) / (float)n : 0.0f;
+  *mgB = (n > 0) ? sqrtf((float)(Ib * Ib + Qb * Qb)) / (float)n : 0.0f;
+  double mA = sA_sum / n, mB = sB_sum / n;
+  double cov = AB - n * mA * mB;
+  double vA_v = AA - n * mA * mA;
+  double vB_v = BB - n * mB * mB;
+  *corr = (vA_v > 0.0 && vB_v > 0.0) ? (float)(cov / sqrt(vA_v * vB_v)) : 0.0f;
+  float dd = pa - pb; while (dd > 180.0f) dd -= 360.0f; while (dd <= -180.0f) dd += 360.0f;
+  *dphase = dd;
+  float ph = atan2f((float)Qh, (float)Ih) * 180.0f / 3.14159265f; if (ph < 0) ph += 360.0f;
+  *phHiA = ph;
+  *mgHiA = (n > 0) ? sqrtf((float)(Ih * Ih + Qh * Qh)) / (float)n : 0.0f;
 }
 
 // two-tone frequency setter + dual lock-in point
@@ -281,6 +406,12 @@ void setup() {
   adc->adc0->setConversionSpeed(ADC_CONVERSION_SPEED::VERY_HIGH_SPEED);
   adc->adc0->setSamplingSpeed(ADC_SAMPLING_SPEED::VERY_HIGH_SPEED);
   adc->adc0->startContinuous(SENSE_PIN);
+  // pair-B on the SECOND ADC module (independent, free-running continuous)
+  adc->adc1->setAveraging(1);
+  adc->adc1->setResolution(12);
+  adc->adc1->setConversionSpeed(ADC_CONVERSION_SPEED::VERY_HIGH_SPEED);
+  adc->adc1->setSamplingSpeed(ADC_SAMPLING_SPEED::VERY_HIGH_SPEED);
+  adc->adc1->startContinuous(SENSE_PIN_2);
   measureDC();
   buildPatterns();
   setFreq(1000.0f);
@@ -424,6 +555,42 @@ void loop() {
     }
     while (Serial.available()) Serial.read();
     twoTone = false;
+    Serial.println("R LOCKED off");
+    return;
+  }
+  if (line[0] == 'G') {           // gentle two-tone + dual-channel: "G <f1> <f2> [amp2]"
+    // drives f1+f2, reads both pair wires locked to f1, reports correlation.
+    // amp2 defaults to 0.3 (gentle). streams: TG <f1> <f2> <phA> <mgA> <phB> <mgB> <corr> <dphase> <phHiA> <mgHiA>
+    float f1 = 17284, f2 = 17284, a2 = 0.3f;
+    sscanf(line + 1, "%f %f %f", &f1, &f2, &a2);
+    ampLo = 1.0f; ampHi = a2;
+    while (!Serial.available()) {
+      float pa, ma, pb, mb, cr, dp, phH, mgH;
+      pointDual2(f1, f2, &pa, &ma, &pb, &mb, &cr, &dp, &phH, &mgH);
+      Serial.print("TG "); Serial.print(f1, 1); Serial.print(' '); Serial.print(f2, 1); Serial.print(' ');
+      Serial.print(pa, 3); Serial.print(' '); Serial.print(ma, 3); Serial.print(' ');
+      Serial.print(pb, 3); Serial.print(' '); Serial.print(mb, 3); Serial.print(' ');
+      Serial.print(cr, 4); Serial.print(' '); Serial.print(dp, 3); Serial.print(' ');
+      Serial.print(phH, 3); Serial.print(' '); Serial.println(mgH, 3);
+    }
+    while (Serial.available()) Serial.read();
+    twoTone = false; dualMode = false;
+    Serial.println("R LOCKED off");
+    return;
+  }
+  if (line[0] == 'C') {           // dual-channel correlation lock: "C <freq_hz>"
+    // drives one tone (the runner), reads pair-A (A0) + pair-B (A1) at once.
+    // streams: TC <freq> <phA> <mgA> <phB> <mgB> <corr> <dphase>
+    float f = 8000; sscanf(line + 1, "%f", &f);
+    while (!Serial.available()) {
+      float pa, ma, pb, mb, cr, dp; pointDual(f, &pa, &ma, &pb, &mb, &cr, &dp);
+      Serial.print("TC "); Serial.print(f, 1); Serial.print(' ');
+      Serial.print(pa, 3); Serial.print(' '); Serial.print(ma, 3); Serial.print(' ');
+      Serial.print(pb, 3); Serial.print(' '); Serial.print(mb, 3); Serial.print(' ');
+      Serial.print(cr, 4); Serial.print(' '); Serial.println(dp, 3);
+    }
+    while (Serial.available()) Serial.read();
+    dualMode = false;
     Serial.println("R LOCKED off");
     return;
   }

@@ -42,6 +42,10 @@ volatile int   driveMode = 0;
 volatile int   singleK   = 0;
 volatile float customUnitRad = 0.0f;
 volatile float coilOff[N_COILS] = {0.0f, 0.0f, 0.0f};   // TWEAK 2026-09-21: PER-COIL drive-phase offset (deg via "O <k> <deg>"). all 0 = original. drive each coil to its own -angle.
+volatile float dphi2 = 0.0f, phase2 = 0.0f;   // TWO-TONE 2026-09-21: 2nd drive tone (overlay). "T <freq>" sets it (0=off).
+volatile int   overlayMix = 0;                 // "TM <m>": 0=off, 1=XOR (two-tone), 2=AND (gate). off = original.
+volatile bool  driveEn[N_COILS] = {true, true, true};  // "DM <k> <0|1>" 2026-09-22: PER-COIL DRIVE MASK. 0 = cut that coil's drive (sense untouched, coil stays connected) so it goes fully passive while the others keep driving. All 1 = original.
+volatile float overlayDuty = 1.0f;             // "TD <pct>" 2026-09-21: opposition-strength knob. Fraction of the overlay half-period the 2nd tone is engaged. 1.0=full (=verified two-tone), 0.0=off (single-tone). Sweep down to map counter-torque authority.
 
 // 3-channel lock-in accumulators
 volatile float accI[N_COILS] = {}, accQ[N_COILS] = {};
@@ -58,13 +62,19 @@ IntervalTimer tick;
 
 void isr() {
   // drive all 3 strands
+  bool ov = (dphi2 > 0.0f) && (phase2 < PI_F * overlayDuty);   // TWO-TONE: overlay square; TD scales how much of the half-period it's engaged (opposition strength)
   for (int k = 0; k < N_COILS; k++) {
+    bool driven = ((driveMode == 1) ? (k == singleK) : (driveMode >= 2)) && driveEn[k];   // DM mask: cut one coil's drive, leave it connected + sensed
     bool on = false;
-    float ph = strandPhase[k] + coilOff[k];   // TWEAK: per-coil drive-phase offset (all driven coils)
-    if (ph >= TWO_PI_F) ph -= TWO_PI_F;
-    if (ph < 0)         ph += TWO_PI_F;
-    if (driveMode == 1)      on = (k == singleK) && (ph < PI_F);
-    else if (driveMode >= 2) on = (ph < PI_F);
+    if (driven) {
+      float ph = strandPhase[k] + coilOff[k];   // per-coil drive-phase offset
+      if (ph >= TWO_PI_F) ph -= TWO_PI_F;
+      if (ph < 0)         ph += TWO_PI_F;
+      bool base_on = (ph < PI_F);
+      if (overlayMix == 1 && dphi2 > 0.0f)      on = base_on ^ ov;    // XOR: two-tone counter-drive
+      else if (overlayMix == 2 && dphi2 > 0.0f) on = base_on && ov;   // AND: gate base with overlay
+      else                                      on = base_on;         // overlay off = original
+    }
     digitalWriteFast(DRIVE_PINS[k], on ? HIGH : LOW);
   }
 
@@ -85,8 +95,9 @@ void isr() {
     accI[pairB] += sb * cosRef; accQ[pairB] += sb * sinRef; nsamp[pairB]++;
   }
 
-  // advance reference + strand phases
+  // advance reference + strand phases (+ overlay tone)
   phase += dphi; if (phase >= TWO_PI_F) phase -= TWO_PI_F;
+  if (dphi2 > 0.0f) { phase2 += dphi2; if (phase2 >= TWO_PI_F) phase2 -= TWO_PI_F; }
   for (int k = 0; k < N_COILS; k++) {
     strandPhase[k] += dphi;
     if (strandPhase[k] >= TWO_PI_F) strandPhase[k] -= TWO_PI_F;
@@ -212,6 +223,33 @@ void loop() {
       } else {
         Serial.println("R OFFSET ERR (use: O <k> <deg>)");
       }
+    }
+    else if (cmd.startsWith("DM ")) {
+      // PER-COIL DRIVE MASK: "DM <k> <0|1>". 0 = that coil is NOT driven (goes passive) but stays
+      // connected and sensed. Lets us cut one rock's drive in software, repeatably, no wires touched.
+      int k = -1, v = -1;
+      if (sscanf(cmd.c_str() + 3, "%d %d", &k, &v) == 2 && k >= 0 && k < N_COILS && (v == 0 || v == 1)) {
+        driveEn[k] = (v == 1);
+        Serial.print("R DMASK "); Serial.print(k); Serial.print(" "); Serial.println(v);
+      } else {
+        Serial.println("R DMASK ERR (use: DM <k> <0|1>)");
+      }
+    }
+    else if (cmd.startsWith("T ")) {
+      // TWO-TONE: overlay (2nd) drive frequency. 0 = off. Pair with TM for the mix.
+      float f2 = cmd.substring(2).toFloat();
+      noInterrupts(); dphi2 = (f2 > 0.0f) ? (TWO_PI_F * f2 / FS) : 0.0f; phase2 = 0.0f; interrupts();
+      Serial.print("R TONE2 "); Serial.println(f2);
+    }
+    else if (cmd.startsWith("TM ")) {
+      overlayMix = cmd.substring(3).toInt();
+      Serial.print("R TMIX "); Serial.println(overlayMix);
+    }
+    else if (cmd.startsWith("TD ")) {
+      // opposition-strength: fraction of the overlay half-period the 2nd tone is engaged. 100 = full (verified two-tone), 0 = off.
+      float d = cmd.substring(3).toFloat() / 100.0f;
+      overlayDuty = (d < 0.0f) ? 0.0f : (d > 1.0f ? 1.0f : d);
+      Serial.print("R TDUTY "); Serial.println(overlayDuty * 100.0f);
     }
     else if (cmd.startsWith("I ")) {
       integ_ms = cmd.substring(2).toFloat();
