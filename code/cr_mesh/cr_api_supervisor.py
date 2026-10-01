@@ -22,7 +22,7 @@ SCOPE — manages ONLY arc's own local API services. It does NOT touch:
 
     python cr_api_supervisor.py [interval_seconds]      # default 20s
 """
-import subprocess, urllib.request, time, os, sys, datetime
+import subprocess, urllib.request, socket, time, os, sys, datetime
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PY = sys.executable
@@ -70,8 +70,19 @@ def log(msg):
 
 def healthy(url):
     try:
-        with urllib.request.urlopen(url, timeout=4) as r:
+        with urllib.request.urlopen(url, timeout=10) as r:   # tolerate slow endpoints (lattice /backend cold ~8s)
             return r.status == 200
+    except Exception:
+        return False
+
+
+def port_listening(port, host='127.0.0.1'):
+    """True if something is already accepting on this port. This is LIVENESS: a served
+    port means the service is up. Port-based, never process-name-based (tonic 5.4 safe);
+    used only to SKIP launching, never to kill."""
+    try:
+        with socket.create_connection((host, port), timeout=2):
+            return True
     except Exception:
         return False
 
@@ -93,16 +104,25 @@ def main(interval=20):
     GRACE = 30           # after launching, give a service time to bind before relaunching (no double-launch)
     while True:
         for s in SERVICES:
-            if healthy(s['health']):
+            # LIVENESS = the PORT is being served, checked first and fast. If the port
+            # is listening the service is UP -> NEVER relaunch. This is the guard that
+            # stops the relaunch pile-up: a slow/flapping health endpoint (lattice
+            # /backend cold ~8s vs the old 4s check) was declaring a LIVE service "down"
+            # and launching a new one every cycle; the extras could not bind :port but
+            # lingered, piling up 2073 stale lattice instances (cleared 2026-10-01).
+            # Port-based, never process-name-based (tonic 5.4 safe); only SKIPS launch,
+            # never kills. Trade-off: a wedged-but-bound process is left alone rather
+            # than relaunch-spammed -- the far smaller harm, and we never kill anyway.
+            if port_listening(s['port']):
                 continue
             if time.time() - last_launch.get(s['name'], 0) < GRACE:
-                continue                 # launched recently; still starting — do NOT double-launch
-            log(f'DOWN {s["name"]} (:{s["port"]}) -> relaunching')
+                continue                 # launched recently; still binding — do NOT double-launch
+            log(f'DOWN {s["name"]} (:{s["port"]}) port unserved -> relaunching')
             try:
                 launch(s)
                 last_launch[s['name']] = time.time()
                 time.sleep(4)
-                log(('  UP ' if healthy(s['health']) else '  starting... ') + s['name'])
+                log(('  UP ' if port_listening(s['port']) else '  starting... ') + s['name'])
             except Exception as e:
                 log(f'  launch FAIL {s["name"]}: {e}')
         time.sleep(interval)
