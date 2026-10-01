@@ -17,6 +17,7 @@ import argparse, json, time, math, threading, os
 import requests
 import cr_api_auth as auth
 import cr_rmap
+import cr_coil_set
 import concurrent.futures as _cf
 from flask import Flask, request, jsonify
 
@@ -955,6 +956,47 @@ def backend_flow():
         'note': 'lightweight routing feed — for a FRESH deep read call POST /api/v1/experiment. '
                 'A rock is absent until an experiment has run it; as_of_us = last update (us).',
     })
+
+
+@app.route('/api/v1/set/collective', methods=['GET', 'POST'])
+def set_collective():
+    """PREDICTED collective of a MIXED coil set (copper + digital rocks in ONE set).
+    Brian 2026-10-01: digital coils ARE the compute rocks (pi5 etc.) coupling into the copper
+    set; the copper read sees the whole set. This returns the MODEL prediction (computed-from-input
+    from the commanded geometry + canon |C(r)|) to run NEXT TO the bench copper read — it is NOT a
+    measured read. Each coil adds |C(r)|^2; ODD set sizes stay one connected frustrated loop; a
+    pure-winding Nc=4 FRAGMENTS (cos90=0). copper_g = bench-calibrated copper-vs-digital coupling.
+
+      GET  [?copper_g=1.0]                    -> the standard 3->4->5 test series
+      POST {"members":[{"kind":"digital","r":2,"phi_deg":90},{"kind":"copper","phi_deg":0},...],
+            "copper_g":1.0}
+      POST {"winding":[{"kind":"digital","r":2,"name":"pi5"},{"kind":"copper"},...]}  (auto 360k/Nc phases)
+      POST {"config":"test_series"|"Nc3"|"Nc4"|"Nc5"}
+    """
+    body = request.get_json(silent=True) or {}
+    try:
+        copper_g = float(request.args.get('copper_g') or body.get('copper_g') or 1.0)
+    except (TypeError, ValueError):
+        copper_g = 1.0
+    pred = {'backend': 'egt-lattice',
+            'kind': 'PREDICTION — computed-from-input (commanded geometry + canon |C(r)|), NOT a measured read',
+            'measured_by': 'the copper coils read structure at the bench (coil-lane)'}
+    if request.method == 'GET' or body.get('config') == 'test_series':
+        pred['series'] = cr_coil_set.test_series(copper_g=copper_g)
+        return jsonify(pred)
+    cfg = body.get('config')
+    if cfg in ('Nc3', 'Nc4', 'Nc5'):
+        key = {'Nc3': 'Nc3_copper', 'Nc4': 'Nc4_add_pi5', 'Nc5': 'Nc5_add_pi5_oracle'}[cfg]
+        pred['result'] = cr_coil_set.test_series(copper_g=copper_g)[key]
+        return jsonify(pred)
+    if body.get('winding'):
+        pred['result'] = cr_coil_set.winding_set(body['winding'], copper_g=copper_g)
+        return jsonify(pred)
+    members = body.get('members')
+    if not members:
+        return jsonify({'error': 'POST {"members":[...]} or {"winding":[...]} or {"config":"test_series"}'}), 400
+    pred['result'] = cr_coil_set.collective(members, copper_g=copper_g)
+    return jsonify(pred)
 
 
 if __name__ == '__main__':
