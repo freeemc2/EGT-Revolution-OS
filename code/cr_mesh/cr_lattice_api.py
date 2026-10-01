@@ -746,6 +746,19 @@ def experiment():
         t = rd.get('traj', {}) or {}
         spec = bodies[bid]
         node_ok = bool(s) and 'error' not in s          # cat B: explicit down-node handling
+        # pi/8 ladder readout (canon: 22.5 deg/rung, 16 rungs), derived HERE in arc's
+        # lane from canon independently. The COMMANDED rung is the rung of the winding
+        # YOU sent = computed-from-input (the echo), NOT a measured compute. The
+        # REALIZED rung (what the floor settled to) needs the realized-phase read and
+        # is reserved — the commanded rung is never dressed as the realized answer.
+        _sig = s.get('sigma_psi_deg')
+        _rung_commanded = None
+        if _sig is not None:
+            _idx = round(float(_sig) / 22.5) % 16
+            _resid = round(((float(_sig) - _idx * 22.5 + 180) % 360) - 180, 4)
+            _rung_commanded = {'rung': _idx, 'residual_deg': _resid,
+                               'ladder': 'pi/8 (22.5 deg/rung, 16 rungs)',
+                               'source': 'computed_from_input: rung of the COMMANDED winding (phi_in) — NOT measured'}
         rocks_read[bid] = {
             'node': node,
             'node_status': 'ok' if node_ok else 'unavailable',
@@ -762,6 +775,16 @@ def experiment():
             'conserved_sigma_psi_deg': s.get('sigma_psi_deg'),
             'conserved_sigma_psi_measured': False,
             'conserved_sigma_psi_source': 'computed: sum(commanded offsets) mod 360 = phi_in — NOT measured',
+            # pi/8 RUNG readout (the "something easy" the offsets compute to). commanded =
+            # the echo rung (computed-from-input); realized = reserved for the below-floor
+            # settled-phase read (sensor-gated) — the commanded rung is NOT the realized answer.
+            'sigma_psi_rung': {
+                'commanded': _rung_commanded,
+                'realized': None,
+                'realized_status': 'pending — requires the realized-phase read (below-floor settled '
+                                   'phase, sensor-gated: Teensy-drive / PICO-read). The commanded rung '
+                                   'is the winding of your input, not what the floor settled to.',
+            },
             # CONTINUOUS lock read. `below_floor` below is a BOOLEAN threshold
             # (all(cv < gate), gate hardcoded global) — a boolean is a discrete
             # outcome, which the fluid read does not have. The per-coil cv IS the
@@ -783,7 +806,7 @@ def experiment():
                 'measured_from_run': ['flow_dt_ms', 'flow_mean_ms', 'flow_range_ms', 'below_floor',
                                       'coil_cv', 'cv_rel', 'cv_ref', 'cv_mad', 'cv_ref_n',
                                       'flow_span_s', 'flow_n_fire', 'flow_t0_us', 'flow_t1_us'],
-                'computed_from_input': ['conserved_sigma_psi_deg'],
+                'computed_from_input': ['conserved_sigma_psi_deg', 'sigma_psi_rung.commanded'],
                 'the_answer': 'MEASURED read = fluid flow (flow_dt_ms) + below-floor CV lock '
                               '(cv_rel / below_floor). conserved_sigma_psi_deg is the winding of what '
                               'YOU commanded — computed, not measured.',
