@@ -18,6 +18,25 @@ option — it REQUIRES one. It blocks reframing into standard physics.
 """
 import sys, re, hashlib, os
 
+# Quarantine surfacing (frame-integrity, fermata). Advisory / WARN-ONLY:
+# the honesty clause forbids blocking a ballot that KILLS or mentions a
+# ruled-out item. Logic: claude-memory/tools/quarantine_check.py (synced to
+# every node). FAIL-OPEN: if unavailable, the vote proceeds unaffected.
+_QUARANTINE_TOOL_DIRS = [
+    r"C:\Users\affor\.claude\projects\C--\memory\tools",
+    "/home/pi/.claude/projects/pi/memory/tools",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "memory", "tools"),
+]
+def _quarantine_scan(text):
+    for d in _QUARANTINE_TOOL_DIRS:
+        if os.path.isdir(d) and d not in sys.path:
+            sys.path.insert(0, d)
+    try:
+        import quarantine_check
+        return quarantine_check.scan(text)
+    except Exception:
+        return []  # fail-open: advisory check never blocks a vote
+
 CONST_PATHS = [
     r"C:\Users\affor\.claude\projects\C--\memory\CANON_CONSTITUTION.md",
     os.path.join(os.path.dirname(os.path.abspath(__file__)), "CANON_CONSTITUTION.md"),
@@ -99,6 +118,14 @@ def main():
         elif got != want:
             fails.append(f"CONSTITUTION TAMPERED: sha256 {got[:12]}... != manifest {want[:12]}... — CORE COMPROMISED, STOP, FLAG BRIAN")
 
+    # Quarantine surfacing — WARN-ONLY, deliberately NOT appended to `fails`
+    # (honesty clause: a ballot may KILL or mention a ruled-out item).
+    qhits = _quarantine_scan(text)
+    if qhits:
+        print(f"  ⚠ QUARANTINE: ballot cites {len(qhits)} ruled-out item(s) — "
+              f"confirm you are KILLING/flagging them, not relying on them as valid:")
+        for h in qhits:
+            print(f"      [{h['verdict']}] {h['id']}: {h['ruling'][:160]}")
     print(f"cr_ballot_lint: {os.path.basename(target)}")
     if fails:
         for f in fails: print("  VOID -", f)
