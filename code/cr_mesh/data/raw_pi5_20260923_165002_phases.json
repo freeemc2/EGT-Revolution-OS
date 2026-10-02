@@ -1,0 +1,37 @@
+[
+  {
+    "phase": "baseline",
+    "t_start": 8.821487426757812e-06,
+    "t_start_us": 19
+  },
+  {
+    "phase": "push_A2",
+    "t_start": 30.002483129501343,
+    "t_start_us": 30106353
+  },
+  {
+    "phase": "rest_A2",
+    "t_start": 60.10794115066528,
+    "t_start_us": 60211551
+  },
+  {
+    "phase": "push_A1",
+    "t_start": 90.21264052391052,
+    "t_start_us": 90316264
+  },
+  {
+    "phase": "rest_A1",
+    "t_start": 120.31770634651184,
+    "t_start_us": 120421565
+  },
+  {
+    "phase": "push_A0",
+    "t_start": 150.42274284362793,
+    "t_start_us": 150526823
+  },
+  {
+    "phase": "rest_A0",
+    "t_start": 180.5281057357788,
+    "t_start_us": 180631865
+  }
+]
