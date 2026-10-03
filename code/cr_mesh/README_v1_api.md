@@ -5,7 +5,7 @@ operator (`/predict`), a real below-floor-lock experiment runner (`/experiment`)
 and a stateless zero-retention transform (`/flow`). One `/v1` front
 (`cr_v1_api.py`), stdlib, behind the signup gate (`cr_api_auth.py`).
 
-Operator (canon): **|C(r)| = (1 + 2r)·e^(−r/3)**, r_opt = 2.5.
+Operator (canon, complex): **C(r, φ) = λ·(1 + 2r)·e^(−r/3)·e^(iφ)**, r_opt = 2.5, anchor C₀ = C(2.5, π/2), |C₀|² = 6.7995. `/predict` returns the full complex operator per rock, not just the envelope |C(r)|.
 
 ## Run
 
@@ -20,7 +20,7 @@ INSTRUMENT=0 python cr_v1_api.py 8099 # production (meter pulled)
 | method | path | gated | returns |
 |---|---|---|---|
 | POST | `/v1/keys` | no | `{api_key, per_min, per_day}` — key shown once, stored hashed |
-| GET | `/v1/predict?r_a=&r_b=&dphi_deg=` | yes | `{C_a, C_b, coupling, r_opt}` — the operator, no run, instant+exact |
+| GET | `/v1/predict?r_a=&r_b=&phi_a_deg=&phi_b_deg=` | yes | complex operator per rock `{C_a,C_b:{re,im,mag,phase_deg,rung,amplitude_ratio,phase_offset_pi8}}` + `lambda,coupling,r_opt,anchor` — no run, exact |
 | POST | `/v1/experiment` `{r, phi_deg, seconds}` | yes | `{C_mag, sigma_psi_rung, sigma_psi_label:"commanded", below_floor, state}` |
 | POST | `/v1/flow` (raw body) | yes | `{rungs:[64 base-16 ints]}` — deterministic, zero-retention |
 | GET | `/v1/meter` | no | `{pkts,bytes}` (INSTRUMENT=1) or `{instrument:false}` (pulled) |

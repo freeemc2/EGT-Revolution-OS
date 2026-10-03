@@ -34,22 +34,28 @@ The key is shown **once** and stored only as a hash — if you lose it, request 
 
 ## 2. `GET /v1/predict` — the operator (exact, instant)
 
-Query the connectivity operator and the coupling between two positions.
+Returns the **complex** connectivity operator **C(r, φ) = λ·(1 + 2r)·e^(−r/3)·e^(iφ)** for each of two rocks, and their coupling. Each rock carries a geometric phase `φ`; pass `phi_a_deg` / `phi_b_deg` (or `dphi_deg`, taken as `phi_a` with `phi_b=0`).
 
 ```bash
-curl -s "$BASE/predict?r_a=0&r_b=2&dphi_deg=55" -H "X-API-Key: $KEY"
+curl -s "$BASE/predict?r_a=2.5&r_b=2&phi_a_deg=90&phi_b_deg=0" -H "X-API-Key: $KEY"
 ```
 ```json
-{ "r_a": 0.0, "r_b": 2.0, "dphi_deg": 55.0,
-  "C_a": 1.0, "C_b": 2.5671, "coupling": 1.4724, "r_opt": 2.5,
-  "operator": "|C(r)| = (1+2r)*e^(-r/3); coupling = |C_a||C_b|*cos(dphi)" }
+{ "r_a": 2.5, "r_b": 2.0, "phi_a_deg": 90, "phi_b_deg": 0, "dphi_deg": 90, "lambda": 1.0,
+  "C_a": { "re": 0.0, "im": 2.6076, "mag": 2.6076, "phase_deg": 90.0,
+           "rung": 4, "amplitude_ratio": 1.0, "phase_offset_pi8": 0.0 },
+  "C_b": { "re": 2.5671, "im": 0.0, "mag": 2.5671, "phase_deg": 0.0,
+           "rung": 0, "amplitude_ratio": 0.969, "phase_offset_pi8": -4.0 },
+  "coupling": 0.0, "r_opt": 2.5,
+  "anchor": { "C0_mag_sq": 6.7995, "phi0_deg": 90, "rung": 4 } }
 ```
 
-- `C_a`, `C_b` = **|C(r)| = (1 + 2r)·e^(−r/3)** at `r_a`, `r_b`.
-- `coupling` = `|C_a|·|C_b|·cos(Δφ)`.
-- `r_opt = 2.5` is where |C(r)| peaks.
+Per rock, `C_a` / `C_b` give:
+- `re`, `im`, `mag`, `phase_deg` — the complex operator value.
+- `rung` — the phase on the π/8 ladder (16 rungs; φ = π/2 → rung 4).
+- `amplitude_ratio` = |C|² / 6.7995 (1.0 at the optimum).
+- `phase_offset_pi8` = (φ − 90°) / 22.5 (offset from the π/2 anchor, in π/8 units).
 
-Reference values: `|C(0)|=1.000`, `|C(1)|=2.150`, `|C(2)|=2.567`, `|C(2.5)|=2.608`, `|C(3)|=2.575`.
+`coupling` = |C_a|·|C_b|·cos(Δφ). `r_opt = 2.5` is where the envelope |C(r)| peaks; the anchor is **C₀ = C(2.5, π/2)**, |C₀|² = 6.7995. Envelope reference: |C(0)|=1.000, |C(1)|=2.150, |C(2)|=2.567, |C(2.5)|=2.608, |C(3)|=2.575.
 
 ---
 
