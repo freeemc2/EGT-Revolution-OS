@@ -6,8 +6,8 @@ A small, keyed HTTP API exposing three things you can test today:
 - **`/experiment`** — sets a geometry and runs a **real below-floor lock on a physical coil rig**, then returns the reading.
 - **`/flow`** — a **deterministic, zero-retention transform** of your input: same input → same output, and the service stores nothing.
 
-> **Base URL:** `https://<host>/v1` — replace `<host>` with the address you were given.
-> Everything below assumes `BASE="https://<host>/v1"` and, after signup, `KEY="<your key>"`.
+> **Base URL:** `http://100.121.177.94:8099/v1` — reachable over **Tailscale** (tailnet only; traffic is encrypted by Tailscale). You must be on the tailnet.
+> Everything below assumes `BASE="http://100.121.177.94:8099/v1"` and, after signup, `KEY="<your key>"`.
 
 ---
 
@@ -135,7 +135,7 @@ Those are separate research tracks and are **not** part of this preview.
 ## Quick full session
 
 ```bash
-BASE="https://<host>/v1"
+BASE="http://100.121.177.94:8099/v1"
 KEY=$(curl -s -X POST "$BASE/keys" -H "Content-Type: application/json" -d '{"name":"demo"}' \
       | python -c "import sys,json;print(json.load(sys.stdin)['api_key'])")
 
