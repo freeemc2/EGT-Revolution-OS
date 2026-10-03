@@ -46,16 +46,24 @@ st_yes, _ = req(MAIN + "/v1/predict?r_a=0&r_b=2&dphi_deg=0", "GET", headers=H)
 rec("gate: no key -> 401", st_no == 401, "got %s" % st_no)
 rec("gate: valid key -> 200", st_yes == 200, "got %s" % st_yes)
 
-# C2 /predict canon
+# C2 /predict canon — C_a/C_b are the COMPLEX operator; .mag is the envelope
 canon = {0: 1.000, 1: 2.150, 2: 2.567, 2.5: 2.608, 3: 2.575}
-allok = True
 for r, exp in canon.items():
     st, d = req(MAIN + "/v1/predict?r_a=%s&r_b=2&dphi_deg=0" % r, "GET", headers=H)
-    got = d.get("C_a")
+    ca = d.get("C_a") or {}
+    got = ca.get("mag") if isinstance(ca, dict) else None
     ok = st == 200 and got is not None and abs(got - exp) <= 0.001
-    allok = allok and ok
     rec("predict |C(%s)| = %.3f" % (r, exp), ok, "got %s" % got)
-# coupling = product * cos(dphi)
+# complex operator: C(2.5, phi=90) = 0 + 2.608 i, amplitude_ratio ~1.0, rung 4
+st, d = req(MAIN + "/v1/predict?r_a=2.5&r_b=2&phi_a_deg=90", "GET", headers=H)
+ca = d.get("C_a") or {}
+cplx = (st == 200 and abs(ca.get("re", 9) - 0.0) <= 0.001 and abs(ca.get("im", 0) - 2.6076) <= 0.001
+        and abs(ca.get("amplitude_ratio", 0) - 1.0) <= 0.001 and ca.get("rung") == 4
+        and ca.get("phase_offset_pi8") == 0.0)
+rec("predict returns complex operator (re,im,amplitude_ratio,rung,phase_offset_pi8)", cplx,
+    "C_a=%s" % ca)
+rec("predict reports lambda + anchor", d.get("lambda") == 1.0 and (d.get("anchor") or {}).get("C0_mag_sq") == 6.7995)
+# coupling = |C_a||C_b| * cos(dphi)
 st, d = req(MAIN + "/v1/predict?r_a=0&r_b=2&dphi_deg=55", "GET", headers=H)
 exp_c = round(1.0 * ((1+4)*math.exp(-2/3)) * math.cos(math.radians(55)), 4)
 rec("predict coupling = |C_a||C_b|cos(dphi)", abs(d.get("coupling", 0) - exp_c) <= 0.001,

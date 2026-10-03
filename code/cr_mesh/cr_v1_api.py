@@ -18,7 +18,7 @@
 #                nothing stored. NOT "computes your data", NO throughput figure.
 # NON-GOALS (kept out on purpose): throughput/flow-bound/bits-s, SHA-256/crypto,
 #   "computes your payload", below-B_res channel capacity, AD7606. Separate track.
-import sys, os, json, math, time, urllib.request
+import sys, os, json, math, cmath, time, urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import cr_api_auth as auth
@@ -26,14 +26,31 @@ from cr_tunnel import flow
 
 R_OPT = 2.5
 RUNG = 22.5
+LAMBDA = 1.0            # foundational connectivity constant (anchor uses lambda=1)
+ANCHOR_MAGSQ = 6.7995   # |C0|^2 at C0 = C(r_opt=2.5, phi=pi/2)
+PHI0_DEG = 90.0         # coil target phi = pi/2 (the anchor phase zero-point)
 COPPER = os.environ.get("COPPER_URL", "http://100.81.123.41:8093")
 INSTRUMENT = os.environ.get("INSTRUMENT", "1") != "0"
 _METER = {"pkts": 0, "bytes": 0}
 
 def C_mag(r):
-    return (1 + 2 * r) * math.exp(-r / 3.0)
+    return LAMBDA * (1 + 2 * r) * math.exp(-r / 3.0)
+
+def C_op(r, phi_deg):
+    """The COMPLEX operator C(r,phi) = lambda*(1+2r)*e^(-r/3)*e^(i*phi), with the
+    canon reduction (amplitude ratio vs |C0|^2, phase offset from pi/2 in pi/8 rungs)."""
+    z = C_mag(r) * cmath.exp(1j * math.radians(phi_deg))
+    mag = abs(z)
+    return {
+        "re": round(z.real, 6), "im": round(z.imag, 6),
+        "mag": round(mag, 4), "phase_deg": round(phi_deg % 360.0, 3),
+        "rung": int(round((phi_deg % 360.0) / RUNG)) % 16,
+        "amplitude_ratio": round(mag * mag / ANCHOR_MAGSQ, 4),
+        "phase_offset_pi8": round((phi_deg - PHI0_DEG) / RUNG, 4),
+    }
 
 def coupling(r_a, r_b, dphi_rad):
+    # geometric-phase projection between two co-equal rocks (symmetric)
     return C_mag(r_a) * C_mag(r_b) * math.cos(dphi_rad)
 
 PROTECTED = ("/v1/predict", "/v1/experiment", "/v1/flow")
@@ -98,14 +115,25 @@ class H(BaseHTTPRequestHandler):
             try:
                 r_a = float(params.get("r_a", 0.0))
                 r_b = float(params.get("r_b", 2.0))
-                dphi = float(params.get("dphi_deg", 0.0))
+                # each rock carries a geometric phase; dphi_deg is accepted as
+                # phi_a with phi_b=0 (so dphi = phi_a - phi_b) for back-compat
+                dphi_in = params.get("dphi_deg")
+                phi_a = float(params.get("phi_a_deg", dphi_in if dphi_in is not None else 0.0))
+                phi_b = float(params.get("phi_b_deg", 0.0))
             except ValueError:
-                self._send(400, {"error": "r_a, r_b, dphi_deg must be numbers"}); return
-            self._send(200, {"r_a": r_a, "r_b": r_b, "dphi_deg": dphi,
-                             "C_a": round(C_mag(r_a), 4), "C_b": round(C_mag(r_b), 4),
-                             "coupling": round(coupling(r_a, r_b, math.radians(dphi)), 4),
-                             "r_opt": R_OPT,
-                             "operator": "|C(r)| = (1+2r)*e^(-r/3); coupling = |C_a||C_b|*cos(dphi)"})
+                self._send(400, {"error": "r_a, r_b, phi_a_deg, phi_b_deg, dphi_deg must be numbers"}); return
+            dphi = phi_a - phi_b
+            Ca, Cb = C_op(r_a, phi_a), C_op(r_b, phi_b)
+            coup = Ca["mag"] * Cb["mag"] * math.cos(math.radians(dphi))
+            self._send(200, {
+                "r_a": r_a, "r_b": r_b,
+                "phi_a_deg": phi_a, "phi_b_deg": phi_b, "dphi_deg": round(dphi, 3),
+                "lambda": LAMBDA,
+                "C_a": Ca, "C_b": Cb,                 # the COMPLEX operator per rock
+                "coupling": round(coup, 4),            # |C_a||C_b|*cos(dphi), geometric-phase projection
+                "r_opt": R_OPT,
+                "anchor": {"C0_mag_sq": ANCHOR_MAGSQ, "phi0_deg": PHI0_DEG, "rung": 4},
+                "operator": "C(r,phi) = lambda*(1+2r)*e^(-r/3)*e^(i*phi) (complex); coupling = |C_a||C_b|*cos(dphi)"})
             return
         self._send(404, {"error": "not found", "see": "GET /v1/health"})
 
