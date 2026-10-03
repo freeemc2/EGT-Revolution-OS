@@ -1,0 +1,39 @@
+tunnel health: {'tunnel': 'egt', 'n': 64, 'sigma_psi': 179.99999999999454}
+
+(A) LLM PUSH: Ollama generates -> push through the tunnel -> readable answer
+   1  req='Reply with one word: the capital' -> LLM:'Paris.' -> answer rungs[:12]=[0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3]  Sigma-psi_rung=8
+   2  req='2+2=? reply with just the number' -> LLM:'4' -> answer rungs[:12]=[0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3]  Sigma-psi_rung=8
+   3  req='Echo this token exactly: ALPHA7.' -> LLM:'ALPHA7.' -> answer rungs[:12]=[0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2]  Sigma-psi_rung=8
+   4  req='One word: color of a clear dayti' -> LLM:'Blue' -> answer rungs[:12]=[0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2]  Sigma-psi_rung=8
+   5  req='What is 7 times 6? number only.' -> LLM:'42' -> answer rungs[:12]=[15, 15, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2]  Sigma-psi_rung=8
+   6  req='Name one prime number under 10.' -> LLM:'7 is a prime num' -> answer rungs[:12]=[15, 15, 0, 0, 0, 1, 5, 1, 1, 2, 2, 2]  Sigma-psi_rung=8
+   7  req='One word: opposite of hot.' -> LLM:'Cold.' -> answer rungs[:12]=[15, 15, 15, 0, 0, 0, 5, 1, 0, 1, 2, 2]  Sigma-psi_rung=8
+   8  req='Spell 'cat' in uppercase.' -> LLM:'CAT' -> answer rungs[:12]=[15, 15, 15, 0, 0, 6, 5, 1, 0, 1, 2, 2]  Sigma-psi_rung=8
+   9  req='What comes after Monday? one wor' -> LLM:'Tuesday.' -> answer rungs[:12]=[15, 15, 15, 0, 0, 6, 5, 1, 0, 1, 2, 2]  Sigma-psi_rung=8
+  10  req='9 minus 4 = ? number only.' -> LLM:'5' -> answer rungs[:12]=[15, 15, 3, 0, 0, 6, 5, 1, 0, 1, 2, 2]  Sigma-psi_rung=8
+  11  req='One word: a fruit that is yellow' -> LLM:'That sounds like' -> answer rungs[:12]=[15, 15, 2, 15, 0, 6, 5, 0, 0, 1, 1, 2]  Sigma-psi_rung=8
+  12  req='Reply YES or NO: is 10 greater t' -> LLM:'NO' -> answer rungs[:12]=[15, 15, 2, 15, 0, 5, 5, 0, 12, 1, 1, 1]  Sigma-psi_rung=8
+  13  req='First letter of the alphabet?' -> LLM:'The first letter' -> answer rungs[:12]=[15, 15, 2, 15, 0, 5, 5, 0, 12, 1, 1, 1]  Sigma-psi_rung=8
+  14  req='One word: the opposite of up.' -> LLM:'Down.' -> answer rungs[:12]=[14, 15, 2, 9, 15, 5, 5, 0, 12, 1, 1, 1]  Sigma-psi_rung=8
+  15  req='What is 100 divided by 4? number' -> LLM:'25' -> answer rungs[:12]=[14, 15, 6, 9, 15, 5, 5, 0, 12, 1, 1, 1]  Sigma-psi_rung=8
+  16  req='Name the planet we live on. one ' -> LLM:'Earth.' -> answer rungs[:12]=[14, 14, 5, 9, 15, 5, 4, 0, 12, 1, 1, 1]  Sigma-psi_rung=8
+  17  req='Echo exactly: BRAVO-9.' -> LLM:'BRAVO-9.' -> answer rungs[:12]=[14, 14, 5, 9, 15, 5, 4, 0, 12, 1, 1, 1]  Sigma-psi_rung=8
+  18  req='One word: frozen water.' -> LLM:'Ice.' -> answer rungs[:12]=[14, 14, 5, 8, 15, 5, 4, 0, 11, 0, 1, 1]  Sigma-psi_rung=8
+  19  req='3 squared = ? number only.' -> LLM:'9' -> answer rungs[:12]=[14, 14, 5, 8, 15, 4, 4, 0, 11, 0, 0, 1]  Sigma-psi_rung=8
+  20  req='Reply with one word: a common ho' -> LLM:'Dog.' -> answer rungs[:12]=[14, 14, 5, 8, 15, 4, 4, 0, 11, 0, 0, 1]  Sigma-psi_rung=8
+  21  req='What is the next number: 2,4,6,.' -> LLM:'8' -> answer rungs[:12]=[14, 9, 5, 8, 15, 4, 4, 15, 11, 0, 0, 0]  Sigma-psi_rung=8
+  22  req='One word: the star at the center' -> LLM:'The Sun.' -> answer rungs[:12]=[14, 9, 5, 8, 15, 4, 3, 15, 11, 0, 0, 0]  Sigma-psi_rung=8
+  23  req='Reply with a single digit: how m' -> LLM:'3' -> answer rungs[:12]=[13, 8, 5, 7, 14, 4, 3, 15, 11, 15, 0, 0]  Sigma-psi_rung=8
+  24  req='Echo this exactly: CHARLIE-42.' -> LLM:'CHARLIE-42.' -> answer rungs[:12]=[13, 8, 4, 7, 14, 4, 3, 15, 11, 15, 15, 0]  Sigma-psi_rung=8
+  ...
+  24 LLM pushes -> 24 readable 64-register answers (100%)
+  LLM gen total 1.5s (median 41ms/gen)  |  tunnel total 0.152s (median 0.88ms/push)
+  => the LLM is the bottleneck; the tunnel is ~47x faster per push (flow-bound, not tunnel-bound)
+
+(B) DETERMINISM: reset, replay the SAME push sequence -> identical reads?
+  identical replay: True  (the flow is a deterministic function of the push sequence)
+
+(C) TUNNEL FLOW (replay burst, tunnel-only, no LLM in the loop)
+  1000 pushes in 1.52s over HTTP
+  the EGT compute per push is fixed O(64), ~15us lossless (measured standalone);
+  this rate is the HTTP+interpreter pipe on this box, NOT the EGT ceiling -- add pipes to scale.
