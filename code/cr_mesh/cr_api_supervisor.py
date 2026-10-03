@@ -45,6 +45,10 @@ SERVICES = [
     {'name': 'llm-conduit', 'port': 8095,
      'health': 'http://127.0.0.1:8095/health',
      'args': ['cr_llm_flow.py', '8095']},
+    {'name': 'compute-v1', 'port': 8099,
+     'health': 'http://127.0.0.1:8099/v1/health',
+     'args': ['cr_v1_api.py', '8099'],
+     'env': {'INSTRUMENT': '0'}},   # production: meter pulled (records nothing)
 ]
 
 
@@ -89,9 +93,11 @@ def port_listening(port, host='127.0.0.1'):
 
 def launch(svc):
     out = open(os.path.join(HERE, f'svc_api_{svc["name"]}.log'), 'a', encoding='utf-8')
+    env = dict(os.environ)
+    env.update(svc.get('env') or {})     # per-service env (e.g. INSTRUMENT=0 in production)
     subprocess.Popen([PY] + svc['args'], cwd=HERE,
                      stdout=out, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
-                     creationflags=DETACH, close_fds=True)
+                     creationflags=DETACH, close_fds=True, env=env)
 
 
 def main(interval=20):
