@@ -208,5 +208,6 @@ class H(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8099
     auth.init_db()
-    print("EGT Compute API /v1 on 127.0.0.1:%d  (copper=%s)" % (port, COPPER), flush=True)
-    ThreadingHTTPServer(("127.0.0.1", port), H).serve_forever()
+    bind = os.environ.get("BIND_HOST", "127.0.0.1")   # 0.0.0.0 to expose on the tailnet
+    print("EGT Compute API /v1 on %s:%d  (copper=%s)" % (bind, port, COPPER), flush=True)
+    ThreadingHTTPServer((bind, port), H).serve_forever()

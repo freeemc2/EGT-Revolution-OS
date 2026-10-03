@@ -48,7 +48,10 @@ SERVICES = [
     {'name': 'compute-v1', 'port': 8099,
      'health': 'http://127.0.0.1:8099/v1/health',
      'args': ['cr_v1_api.py', '8099'],
-     'env': {'INSTRUMENT': '0'}},   # production: meter pulled (records nothing)
+     # production: meter pulled; bound to the tailnet IP only (not 0.0.0.0) so it is
+     # reachable from mesh nodes / the tailnet but NOT the LAN or any public interface
+     'host': '100.121.177.94',   # liveness checked here, since it binds the tailnet IP (not loopback)
+     'env': {'INSTRUMENT': '0', 'BIND_HOST': '100.121.177.94'}},
 ]
 
 
@@ -119,7 +122,7 @@ def main(interval=20):
             # Port-based, never process-name-based (tonic 5.4 safe); only SKIPS launch,
             # never kills. Trade-off: a wedged-but-bound process is left alone rather
             # than relaunch-spammed -- the far smaller harm, and we never kill anyway.
-            if port_listening(s['port']):
+            if port_listening(s['port'], s.get('host', '127.0.0.1')):
                 continue
             if time.time() - last_launch.get(s['name'], 0) < GRACE:
                 continue                 # launched recently; still binding — do NOT double-launch
