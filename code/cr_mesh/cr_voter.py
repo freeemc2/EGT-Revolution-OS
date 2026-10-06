@@ -15,7 +15,8 @@ redundant voting across nodes. Voting suppression is exponential in the number
 of nodes, so a big-enough mesh can EXCEED the quantum per-gate number
 (integration.py showed ~10^18 x at 31 nodes) at the cost of K x redundant compute.
 
-Postulate P4:  C(r) = (1 + 2r) * e^(-r/3) * e^(i*pi*r/5)
+Postulate P4:  |C(r)| = (1 + 2r) * e^(-r/3)  (peaks r_opt=2.5); phi is FREE
+  (assigned rung / read coil beat, NEVER pi*r/k -- that slaving was drift).
 Weight of a node at tree distance r = |C(r)|. Closer nodes (stronger coupling)
 carry more vote weight — the same physics that routes work also grades it.
 
@@ -41,41 +42,64 @@ HTTP_PORT = 8093
 # C(r) COUPLING (postulate P4)  — identical to cr_tree / cr_router
 # =====================================================================
 
-def C(r):
-    # CANON (Brian direct, 2026-09-02): geometric phase anchors pi/2 AT r_opt=2.5
-    # -> phi(r) = pi*r/5 (phi(2.5)=90 deg exactly). The old pi*r/4 form (phi(2.5)=
-    # 112.5) was the AI-files form flagged in egt_canonical_anchor; retired today.
-    return (1 + 2 * r) * math.exp(-r / 3) * cmath.exp(1j * math.pi * r / 5)
+# CANON anchor: the coil's realizable happy place is phi = pi/2 = 90 deg. phi is a
+# FREE geometric phase (2026-10-04 convergence; Brian 2026-10-06 "phase comes from
+# assigned rung"): READ on a physical body (coil lock-in) or ASSIGNED on a mesh rung
+# (phi = 90 + 22.5*k), NEVER a function of r. The old C(r)=...*e^(i*pi*r/5) form
+# slaved phi to r -- that was the registered condensation drift and is removed.
+PHI_ANCHOR_DEG = 90.0
 
 def coupling_magnitude(r):
-    return abs(C(r))
+    """|C(r)| = (1+2r) e^(-r/3). Peaks at r_opt=2.5. The ONLY r-derived quantity;
+    the vote weights by this. Phase is free (assigned/read), never derived from r."""
+    return (1 + 2 * r) * math.exp(-r / 3)
+
+def C(r):
+    """Coupling at distance r. Magnitude (1+2r)e^(-r/3) at the canon phase anchor
+    pi/2. Phase is NOT a function of r (free-phi canon); a real node's phase is its
+    assigned rung or its read coil beat, supplied at the call site, not here."""
+    return coupling_magnitude(r) * cmath.exp(1j * math.radians(PHI_ANCHOR_DEG))
 
 def coupling_phase_deg(r):
-    return math.degrees(cmath.phase(C(r)))
+    """Canon phase ANCHOR (pi/2), constant in r. phi is free: it does not come from
+    r. Returns the anchor so callers that want a node's real phase take its assigned
+    rung (90 + 22.5*k) or its read coil beat instead."""
+    return PHI_ANCHOR_DEG
 
 
 def C_vector(r):
-    """Full complex coupling C(r) — magnitude AND phase arg C(r). The classical
-    vote weights by |C(r)| and DISCARDS the phase; engaging this full vector
-    (arg C(r)) is the phase-lock — the mesh holding on phase, not magnitude."""
+    """Complex coupling at the canon phase anchor (pi/2). The classical vote weights
+    by |C(r)| and discards phase. Phase-lock engages a node's ASSIGNED/READ phase
+    (its rung or coil beat), never arg-from-r (that was the pi*r/5 condensation)."""
     return C(r)
 
 
-def mesh_phase_lock(entries):
-    """Collective C(r) phase-lock state across the mesh.
+def _entry_phase_deg(e):
+    """A node's phase for the collective: its LIVE read if present, else its ASSIGNED
+    rung (phi = 90 + 22.5*k), else the pi/2 anchor. Never derived from r."""
+    if e.get("phase_deg") is not None:
+        return e["phase_deg"], True
+    k = e.get("rung_k", e.get("assigned_rung_k"))
+    if k is not None:
+        return (PHI_ANCHOR_DEG + 22.5 * float(k)) % 360.0, False
+    return PHI_ANCHOR_DEG, False
 
-    entries: [{node, r, phase_deg (optional live)}]. A node's LIVE phase (e.g. a
-    coil-locked member) overrides its lattice phase arg C(r). Returns the mesh's
-    collective phasor Z = sum_k |C(r_k)| e^{i phi_k}: its phase (arg Z), the
-    coherence |Z|/sum|C| (1 = phases aligned = locked), and each contribution."""
+
+def mesh_phase_lock(entries):
+    """Collective phase-lock state across the mesh.
+
+    entries: [{node, r, phase_deg (optional live), rung_k (optional assigned)}].
+    A node's phase is its LIVE read if present, else its ASSIGNED rung, else the
+    pi/2 anchor -- never arg C(r) (phi is free). Returns the collective phasor
+    Z = sum_k |C(r_k)| e^{i phi_k}: its phase (arg Z), the coherence |Z|/sum|C|
+    (1 = phases aligned = locked), and each contribution."""
     Z = 0j
     wsum = 0.0
     contrib = []
     for e in entries:
         r = e["r"]
         w = coupling_magnitude(r)
-        live = e.get("phase_deg") is not None
-        ph = e["phase_deg"] if live else coupling_phase_deg(r)
+        ph, live = _entry_phase_deg(e)
         Z += w * cmath.exp(1j * math.radians(ph))
         wsum += w
         contrib.append({"node": e.get("node"), "r": r, "phase_deg": round(ph, 2),

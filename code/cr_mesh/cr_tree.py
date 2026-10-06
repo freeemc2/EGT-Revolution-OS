@@ -31,15 +31,22 @@ from datetime import datetime, timezone
 # C(r) COUPLING (postulate P4)
 # =====================================================================
 
-def C(r):
-    """P4: coupling function. Returns complex."""
-    return (1 + 2*r) * math.exp(-r/3) * cmath.exp(1j * math.pi * r / 5)
+# phi is FREE (free-phi canon; the old e^(i*pi*r/5) slaving was the condensation
+# drift). Magnitude is the only r-derived quantity; phase is assigned (rung) or read.
+PHI_ANCHOR_DEG = 90.0
 
 def coupling_magnitude(r):
-    return abs(C(r))
+    """|C(r)| = (1+2r) e^(-r/3). Peaks at r_opt=2.5."""
+    return (1 + 2*r) * math.exp(-r/3)
+
+def C(r):
+    """P4: coupling magnitude at the canon phase anchor (pi/2). Phase is free, not
+    a function of r; a node's real phase is its assigned rung or read beat."""
+    return coupling_magnitude(r) * cmath.exp(1j * math.radians(PHI_ANCHOR_DEG))
 
 def coupling_phase_deg(r):
-    return math.degrees(cmath.phase(C(r)))
+    """Canon phase anchor (pi/2), constant in r. phi is free, never arg-from-r."""
+    return PHI_ANCHOR_DEG
 
 
 # =====================================================================

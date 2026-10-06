@@ -29,7 +29,7 @@ try:    # single-source r registry overrides CLI (Brian 2026-09-02)
 except Exception: pass
 R_POS    = 2.5                                          # r_opt — the peak
 BOUNDARY = 90.0                                         # pi/2
-TARGET   = 90.0    # CANON (Brian 2026-09-02): arg C(r_opt=2.5) = pi/2 exactly (pi*r/5 form)
+TARGET   = 90.0    # canon phi anchor = pi/2 (free-phi; phi is assigned/read, never pi*r/k)
 CR_MAG   = (1 + 2 * R_POS) * math.exp(-R_POS / 3.0)     # |C(2.5)| ~ 2.6076
 SWEEP_S  = 20.0                                         # arc sweep duration
 
@@ -108,6 +108,8 @@ def phase_loop():
                 "node": NODE, "hwid": HWID, "r": R_POS,
                 "phase_deg": round(theta, 3), "target_deg": TARGET,
                 "cr_mag": round(CR_MAG, 4),
+                "assigned_rung_k": assigned_k,
+                "rung_phi": (90.0 + 22.5 * assigned_k) if assigned_k is not None else None,
                 "state": "held", "locked_to_coil": coil_phase is not None,
                 "coil_phase_deg": coil_phase, "coil_freq_hz": coil_freq,
                 "delta_from_5pi8_deg": round(delta, 3),
