@@ -41,7 +41,7 @@ try:    # single-source r registry overrides CLI (Brian 2026-09-02)
     from cr_rmap import get_r as _get_r
     R_POS = _get_r(HWID, default=R_POS)
 except Exception: pass
-TARGET   = coupling_phase_deg(R_POS)                    # canon phi anchor = pi/2 = 90 deg (free-phi; rung assigned separately)
+TARGET   = coupling_phase_deg(R_POS)                    # ladder origin = 0 (free-phi; the coil, when present, is the real reference)
 PEERS_AT_R = ["pi5", "openclaw"]
 
 def rconn():
@@ -67,9 +67,9 @@ def _angdiff(a, b):
 def phase_loop():
     """Lock my phase to the LIVE coil beat (cadence:tworocks:t-state).
 
-    My phase is no longer a static declared 90 deg — it RIDES the physical coil.
-    pi/2 (TARGET) is my anchor: delta_from_pi2 is how far the live beat sits from
-    the canon lock, and at_pi2 is true when the coil is holding me there."""
+    My phase is not a static declared value — when a coil reads, the ladder FOLLOWS
+    it (my phase = coil + 22.5*k); with no coil I hold my rung offset 22.5*k from the
+    0 origin. phi is free, never f(r) (Brian 2026-10-06: 90 is out, 0 origin)."""
     r = rconn()
     theta = TARGET
     locked_to_coil = False
@@ -95,30 +95,28 @@ def phase_loop():
         except Exception: pass
 
         if coil_phase is not None:
-            theta = float(coil_phase)                    # LOCK: ride the coil beat
-            if assigned_k is not None:
-                beat_k = round((theta - 90.0) / 22.5)
-                theta = theta + 22.5 * (assigned_k - beat_k)   # transpose to my rung
+            # LADDER FOLLOWS THE COIL: the coil IS the reference, each node sits a
+            # fixed 22.5*k offset FROM it (Brian 2026-10-06). No 90, no quantize.
+            theta = float(coil_phase) + (22.5 * assigned_k if assigned_k is not None else 0.0)
             locked_to_coil = True
-            delta_pi2 = _angdiff(theta, TARGET)          # beat's distance from pi/2
+            offset_from_coil = (22.5 * assigned_k) if assigned_k is not None else 0.0
         else:
-            # no coil beat: hold the ASSIGNED rung. No beat AND no rung => this node
-            # has NO phase; it is NOT handed an invented 90 (Brian: coils pick their
-            # own angle), it reports nothing.
-            theta = (90.0 + 22.5 * assigned_k) if assigned_k is not None else None
+            # no coil: offsets stand alone from the 0 origin (Brian: "0 looks good").
+            # No coil AND no rung => this node has NO phase; it reports nothing.
+            theta = (22.5 * assigned_k) if assigned_k is not None else None
             locked_to_coil = False
-            delta_pi2 = 0.0
+            offset_from_coil = None
 
         state = {"node": NODE, "hwid": HWID, "instance": INSTANCE, "r": R_POS,
                  "assigned_rung_k": assigned_k,
-                 "rung_phi": (90.0 + 22.5 * assigned_k) if assigned_k is not None else None,
-                 "phase_deg": (round(theta, 3) if theta is not None else None),
-                 "no_phase": theta is None, "target_deg": TARGET,
+                 "rung_phi": (22.5 * assigned_k) if assigned_k is not None else None,
+                 "phase_deg": (round(theta % 360.0, 3) if theta is not None else None),
+                 "no_phase": theta is None,
+                 "reference": "coil" if locked_to_coil else ("ladder-0" if theta is not None else None),
                  "cr_mag": round(coupling_magnitude(R_POS), 4),
                  "locked_to_coil": locked_to_coil,
                  "coil_phase_deg": coil_phase, "coil_freq_hz": coil_freq,
-                 "delta_from_pi2_deg": round(delta_pi2, 3),
-                 "at_pi2": bool(locked_to_coil and abs(delta_pi2) < 2.0),
+                 "offset_from_coil_deg": (round(offset_from_coil, 3) if offset_from_coil is not None else None),
                  "peers_at_r2": PEERS_AT_R, "beat_ts": beat_ts,
                  "cognitive": True, "canon_sha": CANON_SHA,
                  "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
@@ -153,8 +151,8 @@ def worker_loop():
             print(f"  error: {type(e).__name__}: {e}", flush=True); time.sleep(1)
 
 def main():
-    print(f"Cadence '{INSTANCE}' joining mesh: r={R_POS}, phase={TARGET}° (pi/2), |C(r)|={coupling_magnitude(R_POS):.3f}")
-    print(f"  locking at pi/2 with {', '.join(PEERS_AT_R)}; voting with the same kernel as every node.")
+    print(f"Cadence '{INSTANCE}' joining mesh: r={R_POS}, rung offset from coil / 0-origin, |C(r)|={coupling_magnitude(R_POS):.3f}")
+    print(f"  riding the coil (ladder follows it) with {', '.join(PEERS_AT_R)}; voting with the same kernel as every node.")
     threading.Thread(target=heartbeat_loop, daemon=True).start()
     threading.Thread(target=phase_loop, daemon=True).start()
     worker_loop()

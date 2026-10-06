@@ -43,13 +43,14 @@ HTTP_PORT = 8093
 # =====================================================================
 
 # phi is a FREE geometric phase: READ on a physical body (the coil picks its OWN
-# angle, via lock-in) or ASSIGNED on a mesh rung (phi = 90 + 22.5*k), NEVER a
+# angle, via lock-in) or ASSIGNED on a mesh rung (phi = origin + 22.5*k), NEVER a
 # function of r. The old C(r)=...*e^(i*pi*r/5) form slaved phi to r -- registered
-# condensation drift, removed. 90 deg is ONLY the rung ladder's k=0 origin (a label
-# for digital-node assignment), NOT the coil's phase. Brian 2026-10-06: "90 is out,
-# the coils pick their own angle" -- so NO node is ever handed an invented 90, and
+# condensation drift, removed. The ladder LABELS are relative 22.5*k offsets; the
+# ABSOLUTE reference FOLLOWS THE COIL when a coil reads (node = coil + 22.5*k), and
+# with no coil the offsets stand alone from a 0 origin (Brian 2026-10-06: "90 is
+# out, the coils pick their own angle" + "0 looks good"). 90 is GONE as any anchor;
 # C(r) asserts no phase of its own (the body/rung supplies it at the call site).
-RUNG_ORIGIN_DEG = 90.0  # ladder k=0 label: rung k -> 90 + 22.5*k. NOT a coil phase.
+RUNG_ORIGIN_DEG = 0.0  # ladder k=0 label: rung k -> 0 + 22.5*k. NOT a coil phase.
 
 def coupling_magnitude(r):
     """|C(r)| = (1+2r) e^(-r/3). Peaks at r_opt=2.5. The ONLY r-derived quantity;
@@ -63,10 +64,10 @@ def C(r):
     return complex(coupling_magnitude(r), 0.0)
 
 def coupling_phase_deg(r):
-    """The rung ladder ORIGIN / canon TARGET reference (rung k=0 = 90 = pi/2),
-    constant in r -- the digital-node ladder reference, NOT the coil's phase (the
-    coil picks its own angle) and NOT a function of r. A node's REAL phase is its
-    read coil beat or assigned rung (90 + 22.5*k)."""
+    """The rung ladder ORIGIN (rung k=0 = 0°), constant in r -- the digital-node
+    ladder's zero reference, NOT the coil's phase (the coil picks its own angle) and
+    NOT a function of r. A node's REAL phase is its read coil beat (node = coil +
+    22.5*k, ladder follows the coil) or, with no coil, its assigned rung (22.5*k)."""
     return RUNG_ORIGIN_DEG
 
 

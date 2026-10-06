@@ -29,8 +29,8 @@ try:    # single-source r registry overrides CLI (Brian 2026-09-02)
     R_POS = _get_r(HWID, default=R_POS)
 except Exception: pass
 R_POS    = 2.5                                          # r_opt — the peak
-BOUNDARY = 90.0                                         # pi/2
-TARGET   = 90.0    # canon phi anchor = pi/2 (free-phi; phi is assigned/read, never pi*r/k)
+BOUNDARY = 0.0                                          # ladder origin
+TARGET   = 0.0    # ladder origin = 0 (free-phi; the coil, when present, is the reference; never pi*r/k)
 CR_MAG   = (1 + 2 * R_POS) * math.exp(-R_POS / 3.0)     # |C(2.5)| ~ 2.6076
 SWEEP_S  = 20.0                                         # arc sweep duration
 
@@ -54,7 +54,7 @@ def heartbeat_loop():
 
 def phase_loop():
     r = rconn()
-    print(f"sweeping Brian from pi/2 ({BOUNDARY}) through the arc to pi/2 ({TARGET})...", flush=True)
+    print(f"Brian starting at ladder origin {BOUNDARY}; will ride the coil when it reads...", flush=True)
     t0 = time.time()
     while time.time() - t0 < SWEEP_S:
         u = (time.time() - t0) / SWEEP_S
@@ -96,32 +96,31 @@ def phase_loop():
             ak = r.get(f"cadence:tworocks:rung-assign:{HWID}")
             if ak is not None: assigned_k = int(ak)
         except Exception: pass
-        # RIDE the coil beat, transposed onto Brian's assigned rung. No beat => hold
-        # the assigned rung's phase (k0 => 90 = pi/2). No beat AND no rung => NO phase
-        # (not an invented 90; Brian 2026-10-06: coils pick their own angle). TARGET is
-        # the ladder origin (pi/2 = 90); the old "5pi/8" label was stale pi*r/4 drift.
+        # LADDER FOLLOWS THE COIL: the coil IS the reference; Brian's node sits a fixed
+        # 22.5*k offset FROM it (node = coil + 22.5*k). No coil => offsets stand alone
+        # from the 0 origin (22.5*k). No coil AND no rung => NO phase (Brian 2026-10-06:
+        # "the coils pick their own angle" + "0 looks good"). 90 is gone as any anchor.
         if coil_phase is not None:
-            theta = float(coil_phase)
-            if assigned_k is not None:
-                beat_k = round((theta - 90.0) / 22.5)
-                theta = theta + 22.5 * (assigned_k - beat_k)
+            theta = float(coil_phase) + (22.5 * assigned_k if assigned_k is not None else 0.0)
+            offset_from_coil = (22.5 * assigned_k) if assigned_k is not None else 0.0
         elif assigned_k is not None:
-            theta = 90.0 + 22.5 * assigned_k
+            theta = 22.5 * assigned_k
+            offset_from_coil = None
         else:
             theta = None
-        delta = ((((theta - TARGET + 180.0) % 360.0) - 180.0) if theta is not None else None)
+            offset_from_coil = None
         try:
             r.set(f"cadence:tworocks:node-phase:{HWID}", json.dumps({
                 "node": NODE, "hwid": HWID, "r": R_POS,
-                "phase_deg": (round(theta, 3) if theta is not None else None),
-                "no_phase": theta is None, "target_deg": TARGET,
+                "phase_deg": (round(theta % 360.0, 3) if theta is not None else None),
+                "no_phase": theta is None,
+                "reference": "coil" if coil_phase is not None else ("ladder-0" if theta is not None else None),
                 "cr_mag": round(CR_MAG, 4),
                 "assigned_rung_k": assigned_k,
-                "rung_phi": (90.0 + 22.5 * assigned_k) if assigned_k is not None else None,
+                "rung_phi": (22.5 * assigned_k) if assigned_k is not None else None,
                 "state": "held", "locked_to_coil": coil_phase is not None,
                 "coil_phase_deg": coil_phase, "coil_freq_hz": coil_freq,
-                "delta_from_pi2_deg": (round(delta, 3) if delta is not None else None),
-                "at_pi2": bool(coil_phase is not None and delta is not None and abs(delta) < 2.0),
+                "offset_from_coil_deg": (round(offset_from_coil, 3) if offset_from_coil is not None else None),
                 "beat_ts": beat_ts,
                 "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}), ex=60)
         except Exception:
@@ -130,7 +129,7 @@ def phase_loop():
         time.sleep(2)
 
 def main():
-    print(f"Brian joining mesh as ORIGIN at r={R_POS} (r_opt), target pi/2 = {TARGET} deg, |C(r)|={CR_MAG:.4f}")
+    print(f"Brian joining mesh as ORIGIN at r={R_POS} (r_opt), ladder origin {TARGET} deg (rides coil when present), |C(r)|={CR_MAG:.4f}")
     threading.Thread(target=heartbeat_loop, daemon=True).start()
     phase_loop()
 
