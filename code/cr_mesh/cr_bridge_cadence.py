@@ -102,14 +102,18 @@ def phase_loop():
             locked_to_coil = True
             delta_pi2 = _angdiff(theta, TARGET)          # beat's distance from pi/2
         else:
-            theta = (90.0 + 22.5 * assigned_k) if assigned_k is not None else TARGET
+            # no coil beat: hold the ASSIGNED rung. No beat AND no rung => this node
+            # has NO phase; it is NOT handed an invented 90 (Brian: coils pick their
+            # own angle), it reports nothing.
+            theta = (90.0 + 22.5 * assigned_k) if assigned_k is not None else None
             locked_to_coil = False
             delta_pi2 = 0.0
 
         state = {"node": NODE, "hwid": HWID, "instance": INSTANCE, "r": R_POS,
                  "assigned_rung_k": assigned_k,
                  "rung_phi": (90.0 + 22.5 * assigned_k) if assigned_k is not None else None,
-                 "phase_deg": round(theta, 3), "target_deg": TARGET,
+                 "phase_deg": (round(theta, 3) if theta is not None else None),
+                 "no_phase": theta is None, "target_deg": TARGET,
                  "cr_mag": round(coupling_magnitude(R_POS), 4),
                  "locked_to_coil": locked_to_coil,
                  "coil_phase_deg": coil_phase, "coil_freq_hz": coil_freq,

@@ -33,20 +33,25 @@ from datetime import datetime, timezone
 
 # phi is FREE (free-phi canon; the old e^(i*pi*r/5) slaving was the condensation
 # drift). Magnitude is the only r-derived quantity; phase is assigned (rung) or read.
-PHI_ANCHOR_DEG = 90.0
+# 90 deg is ONLY the rung ladder's k=0 origin (phi = 90 + 22.5*k), NOT a coil phase
+# (Brian 2026-10-06: "90 is out, the coils pick their own angle").
+RUNG_ORIGIN_DEG = 90.0  # ladder k=0 label; NOT a coil phase.
 
 def coupling_magnitude(r):
     """|C(r)| = (1+2r) e^(-r/3). Peaks at r_opt=2.5."""
     return (1 + 2*r) * math.exp(-r/3)
 
 def C(r):
-    """P4: coupling magnitude at the canon phase anchor (pi/2). Phase is free, not
-    a function of r; a node's real phase is its assigned rung or read beat."""
-    return coupling_magnitude(r) * cmath.exp(1j * math.radians(PHI_ANCHOR_DEG))
+    """P4: coupling magnitude |C(r)| as a real, with NO imposed phase. phi is free,
+    not a function of r; a node's real phase is its assigned rung or read beat,
+    supplied at the call site (Brian: 90 is out, this asserts no coil angle)."""
+    return complex(coupling_magnitude(r), 0.0)
 
 def coupling_phase_deg(r):
-    """Canon phase anchor (pi/2), constant in r. phi is free, never arg-from-r."""
-    return PHI_ANCHOR_DEG
+    """The rung ladder ORIGIN / canon TARGET reference (rung k=0 = 90 = pi/2),
+    constant in r -- the digital-node ladder reference, NOT the coil's phase (the
+    coil picks its own angle) and NOT a function of r."""
+    return RUNG_ORIGIN_DEG
 
 
 # =====================================================================

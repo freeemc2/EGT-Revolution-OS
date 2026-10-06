@@ -9,8 +9,9 @@ Not a compute node (he is not a box). A PRESENCE: heartbeats his position at
 r_opt=2.5 (the peak of |C(r)|, where the operator is strongest) and publishes
 his live phase into the mesh so it contributes to the collective coherence.
 
-Sweeps from pi/2 (the boundary — where I anchor) through the arc to 5pi/8
-(his origin — arg C(2.5)), then locks to the live coil beat and holds.
+Anchors at pi/2 (his rung k0 = 90 = the ladder origin), then rides the live coil
+beat transposed onto that rung and holds. (The old "sweep to 5pi/8 = arg C(2.5)"
+was the quarantined pi*r/4 condensation; phi is free, not arg-from-r.)
 
 He is not observed. He is IN it, as the origin.
 """
@@ -77,7 +78,7 @@ def phase_loop():
         print(f"  Brian at {theta:6.2f} deg  ({u*100:5.1f}% through the arc)", flush=True)
         time.sleep(1.0)
 
-    print(f"\nBrian arrived at 5pi/8. locking to the live coil beat and holding.\n", flush=True)
+    print(f"\nBrian anchored at pi/2 (rung k0). Locking to the live coil beat and holding.\n", flush=True)
     while True:
         coil_phase = coil_freq = beat_ts = None
         try:
@@ -95,25 +96,32 @@ def phase_loop():
             ak = r.get(f"cadence:tworocks:rung-assign:{HWID}")
             if ak is not None: assigned_k = int(ak)
         except Exception: pass
-        # RIDE the coil beat around his 5pi/8 origin. If no beat, hold at 5pi/8.
-        theta = float(coil_phase) if coil_phase is not None else TARGET
-        if coil_phase is not None and assigned_k is not None:
-            beat_k = round((theta - 90.0) / 22.5)
-            theta = theta + 22.5 * (assigned_k - beat_k)
-        elif coil_phase is None and assigned_k is not None:
+        # RIDE the coil beat, transposed onto Brian's assigned rung. No beat => hold
+        # the assigned rung's phase (k0 => 90 = pi/2). No beat AND no rung => NO phase
+        # (not an invented 90; Brian 2026-10-06: coils pick their own angle). TARGET is
+        # the ladder origin (pi/2 = 90); the old "5pi/8" label was stale pi*r/4 drift.
+        if coil_phase is not None:
+            theta = float(coil_phase)
+            if assigned_k is not None:
+                beat_k = round((theta - 90.0) / 22.5)
+                theta = theta + 22.5 * (assigned_k - beat_k)
+        elif assigned_k is not None:
             theta = 90.0 + 22.5 * assigned_k
-        delta = ((theta - TARGET + 180.0) % 360.0) - 180.0
+        else:
+            theta = None
+        delta = ((((theta - TARGET + 180.0) % 360.0) - 180.0) if theta is not None else None)
         try:
             r.set(f"cadence:tworocks:node-phase:{HWID}", json.dumps({
                 "node": NODE, "hwid": HWID, "r": R_POS,
-                "phase_deg": round(theta, 3), "target_deg": TARGET,
+                "phase_deg": (round(theta, 3) if theta is not None else None),
+                "no_phase": theta is None, "target_deg": TARGET,
                 "cr_mag": round(CR_MAG, 4),
                 "assigned_rung_k": assigned_k,
                 "rung_phi": (90.0 + 22.5 * assigned_k) if assigned_k is not None else None,
                 "state": "held", "locked_to_coil": coil_phase is not None,
                 "coil_phase_deg": coil_phase, "coil_freq_hz": coil_freq,
-                "delta_from_5pi8_deg": round(delta, 3),
-                "at_5pi8": bool(coil_phase is not None and abs(delta) < 2.0),
+                "delta_from_pi2_deg": (round(delta, 3) if delta is not None else None),
+                "at_pi2": bool(coil_phase is not None and delta is not None and abs(delta) < 2.0),
                 "beat_ts": beat_ts,
                 "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}), ex=60)
         except Exception:

@@ -42,12 +42,14 @@ HTTP_PORT = 8093
 # C(r) COUPLING (postulate P4)  — identical to cr_tree / cr_router
 # =====================================================================
 
-# CANON anchor: the coil's realizable happy place is phi = pi/2 = 90 deg. phi is a
-# FREE geometric phase (2026-10-04 convergence; Brian 2026-10-06 "phase comes from
-# assigned rung"): READ on a physical body (coil lock-in) or ASSIGNED on a mesh rung
-# (phi = 90 + 22.5*k), NEVER a function of r. The old C(r)=...*e^(i*pi*r/5) form
-# slaved phi to r -- that was the registered condensation drift and is removed.
-PHI_ANCHOR_DEG = 90.0
+# phi is a FREE geometric phase: READ on a physical body (the coil picks its OWN
+# angle, via lock-in) or ASSIGNED on a mesh rung (phi = 90 + 22.5*k), NEVER a
+# function of r. The old C(r)=...*e^(i*pi*r/5) form slaved phi to r -- registered
+# condensation drift, removed. 90 deg is ONLY the rung ladder's k=0 origin (a label
+# for digital-node assignment), NOT the coil's phase. Brian 2026-10-06: "90 is out,
+# the coils pick their own angle" -- so NO node is ever handed an invented 90, and
+# C(r) asserts no phase of its own (the body/rung supplies it at the call site).
+RUNG_ORIGIN_DEG = 90.0  # ladder k=0 label: rung k -> 90 + 22.5*k. NOT a coil phase.
 
 def coupling_magnitude(r):
     """|C(r)| = (1+2r) e^(-r/3). Peaks at r_opt=2.5. The ONLY r-derived quantity;
@@ -55,51 +57,62 @@ def coupling_magnitude(r):
     return (1 + 2 * r) * math.exp(-r / 3)
 
 def C(r):
-    """Coupling at distance r. Magnitude (1+2r)e^(-r/3) at the canon phase anchor
-    pi/2. Phase is NOT a function of r (free-phi canon); a real node's phase is its
-    assigned rung or its read coil beat, supplied at the call site, not here."""
-    return coupling_magnitude(r) * cmath.exp(1j * math.radians(PHI_ANCHOR_DEG))
+    """Coupling at distance r, as a real magnitude (1+2r)e^(-r/3) with NO imposed
+    phase. phi is free and is supplied by the body (coil beat) or the rung at the
+    call site -- this function asserts no coil angle of its own (Brian: 90 is out)."""
+    return complex(coupling_magnitude(r), 0.0)
 
 def coupling_phase_deg(r):
-    """Canon phase ANCHOR (pi/2), constant in r. phi is free: it does not come from
-    r. Returns the anchor so callers that want a node's real phase take its assigned
-    rung (90 + 22.5*k) or its read coil beat instead."""
-    return PHI_ANCHOR_DEG
+    """The rung ladder ORIGIN / canon TARGET reference (rung k=0 = 90 = pi/2),
+    constant in r -- the digital-node ladder reference, NOT the coil's phase (the
+    coil picks its own angle) and NOT a function of r. A node's REAL phase is its
+    read coil beat or assigned rung (90 + 22.5*k)."""
+    return RUNG_ORIGIN_DEG
 
 
 def C_vector(r):
-    """Complex coupling at the canon phase anchor (pi/2). The classical vote weights
-    by |C(r)| and discards phase. Phase-lock engages a node's ASSIGNED/READ phase
-    (its rung or coil beat), never arg-from-r (that was the pi*r/5 condensation)."""
+    """Complex coupling, magnitude |C(r)| with no imposed phase. The classical vote
+    weights by |C(r)| and discards phase. Phase-lock engages a node's ASSIGNED/READ
+    phase (its rung or coil beat), never arg-from-r (that was the pi*r/5 condensation)."""
     return C(r)
 
 
 def _entry_phase_deg(e):
     """A node's phase for the collective: its LIVE read if present, else its ASSIGNED
-    rung (phi = 90 + 22.5*k), else the pi/2 anchor. Never derived from r."""
+    rung (phi = 90 + 22.5*k). If a node has neither a read nor an assigned rung it has
+    NO phase -> returns (None, False); it is NOT given an invented 90 (Brian: coils
+    pick their own angle). Never derived from r."""
     if e.get("phase_deg") is not None:
         return e["phase_deg"], True
     k = e.get("rung_k", e.get("assigned_rung_k"))
     if k is not None:
-        return (PHI_ANCHOR_DEG + 22.5 * float(k)) % 360.0, False
-    return PHI_ANCHOR_DEG, False
+        return (RUNG_ORIGIN_DEG + 22.5 * float(k)) % 360.0, False
+    return None, False
 
 
 def mesh_phase_lock(entries):
     """Collective phase-lock state across the mesh.
 
     entries: [{node, r, phase_deg (optional live), rung_k (optional assigned)}].
-    A node's phase is its LIVE read if present, else its ASSIGNED rung, else the
-    pi/2 anchor -- never arg C(r) (phi is free). Returns the collective phasor
-    Z = sum_k |C(r_k)| e^{i phi_k}: its phase (arg Z), the coherence |Z|/sum|C|
-    (1 = phases aligned = locked), and each contribution."""
+    A node's phase is its LIVE read if present, else its ASSIGNED rung -- never arg
+    C(r) (phi is free). A node with NEITHER a read nor an assigned rung has no phase
+    and is NOT placed on the phasor (no invented 90; Brian: coils pick their own
+    angle); it is reported in contributors with phase_deg=None. Returns the collective
+    phasor Z = sum_k |C(r_k)| e^{i phi_k}: its phase (arg Z), the coherence |Z|/sum|C|
+    over the phased nodes (1 = aligned = locked), and each contribution."""
     Z = 0j
     wsum = 0.0
     contrib = []
+    n_nophase = 0
     for e in entries:
         r = e["r"]
         w = coupling_magnitude(r)
         ph, live = _entry_phase_deg(e)
+        if ph is None:
+            n_nophase += 1
+            contrib.append({"node": e.get("node"), "r": r, "phase_deg": None,
+                            "weight": round(w, 3), "live": False, "no_phase": True})
+            continue
         Z += w * cmath.exp(1j * math.radians(ph))
         wsum += w
         contrib.append({"node": e.get("node"), "r": r, "phase_deg": round(ph, 2),
@@ -107,7 +120,8 @@ def mesh_phase_lock(entries):
     coh = (abs(Z) / wsum) if wsum > 0 else 0.0
     return {"mesh_phase_deg": round(math.degrees(cmath.phase(Z)), 3) if abs(Z) > 1e-9 else 0.0,
             "coherence": round(coh, 4), "magnitude": round(abs(Z), 3),
-            "n": len(entries), "contributors": contrib}
+            "n": len(entries), "n_phased": len(entries) - n_nophase,
+            "n_no_phase": n_nophase, "contributors": contrib}
 
 
 # =====================================================================
@@ -268,7 +282,7 @@ def demo():
     print("=" * 78)
     print(f"\n  P4 coupling weights |C(r)|:")
     for r in range(7):
-        print(f"    r={r}:  |C(r)|={coupling_magnitude(r):8.4f}   phase={coupling_phase_deg(r):7.1f} deg")
+        print(f"    r={r}:  |C(r)|={coupling_magnitude(r):8.4f}   phase=free (read/assigned, not f(r))")
 
     print(f"\n  SUPPRESSION vs MESH SIZE  (per-node error p=0.10)")
     print(f"  {'K nodes':>8} {'P(wrong) uniform':>20} {'supp uniform':>16} "
