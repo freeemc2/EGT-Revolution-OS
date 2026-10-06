@@ -42,17 +42,19 @@ def main():
                 ak = r.get(f"cadence:tworocks:rung-assign:{hwid}")
                 if ak is None: continue
                 k = int(ak)
-                rung = 90.0 + 22.5 * k
+                rung = 22.5 * k                      # ladder offset from 0 origin (90 is out)
                 if beat is not None:
-                    beat_k = round((beat - 90.0) / 22.5)
-                    theta = beat + 22.5 * (k - beat_k)
+                    # LADDER FOLLOWS THE COIL: node = coil beat + 22.5*k (offset from
+                    # the coil). No 90 anchor, no quantize (Brian 2026-10-06).
+                    theta = beat + 22.5 * k
                     locked = True
                 else:
-                    theta = rung; locked = False
+                    theta = rung; locked = False     # no coil: pure offset from 0
                 r.set(f"cadence:tworocks:node-phase:{hwid}", json.dumps({
                     "node": node, "hwid": hwid, "r": get_r(hwid, default=1),
                     "assigned_rung_k": k, "rung_phi": rung,
-                    "phase_deg": round(theta, 3), "locked_to_coil": locked,
+                    "phase_deg": round(theta % 360.0, 3), "locked_to_coil": locked,
+                    "reference": "coil" if locked else "ladder-0",
                     "held_by": "shepherd-proxy",
                     "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}), ex=60)
         except redis.exceptions.RedisError:
