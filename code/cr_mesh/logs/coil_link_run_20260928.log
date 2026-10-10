@@ -1,0 +1,38 @@
+COIL<->COIL LINK  pi5(driven) <-> COM10(tonic, passive)   read-nodes: ['dragonseye', 'pi5']
+  COM10 endpoint: http://100.121.177.94:8094/read (tonic, anchor-currency)
+  [PREFLIGHT] COM10 LIVE: driven=True locked=True mag=0.154 anchor=0.15034999999999998 amp_ratio=1.0242766877286333
+
+[1] warm up read-nodes, coil to frustrated...
+[2] background logged CPU run...
+[3] driving pi5 coil + reading BOTH coils per phase...
+  baseline  pi5 mag=[0.008167, 0.0115, 0.021667] | COM10 amp_ratio=1.01763 phase_pi8=0.33541 (n=6)
+  push_A0   pi5 mag=[0.0174, 0.0116, 0.011] | COM10 amp_ratio=1.01763 phase_pi8=0.33696 (n=6)
+  rest_A0   pi5 mag=[0.0128, 0.005, 0.011] | COM10 amp_ratio=1.02206 phase_pi8=0.33281 (n=6)
+  push_A1   pi5 mag=[0.02, 0.013333, 0.008667] | COM10 amp_ratio=1.01873 phase_pi8=0.33541 (n=6)
+  rest_A1   pi5 mag=[0.019333, 0.013167, 0.009] | COM10 amp_ratio=1.01541 phase_pi8=0.33363 (n=6)
+  push_A2   pi5 mag=[0.0192, 0.0098, 0.015] | COM10 amp_ratio=1.02095 phase_pi8=0.33274 (n=6)
+  rest_A2   pi5 mag=[0.0186, 0.011, 0.0104] | COM10 amp_ratio=1.02095 phase_pi8=0.34341 (n=6)
+[4] CPU n_fire: {'dragonseye': 5485, 'pi5': 5517}
+
+[5] pull CPU logs + bin...
+
+==================================================================
+COIL MAGNITUDES PER PHASE (the link)
+==================================================================
+phase     pi5 coil mag[A0,A1,A2]     COM10 amp_r  phase_pi8    n     
+baseline  [0.008167, 0.0115, 0.021667] 1.01763      0.33541      6     
+push_A0   [0.0174, 0.0116, 0.011]    1.01763      0.33696      6     
+rest_A0   [0.0128, 0.005, 0.011]     1.02206      0.33281      6     
+push_A1   [0.02, 0.013333, 0.008667] 1.01873      0.33541      6     
+rest_A1   [0.019333, 0.013167, 0.009] 1.01541      0.33363      6     
+push_A2   [0.0192, 0.0098, 0.015]    1.02095      0.33274      6     
+rest_A2   [0.0186, 0.011, 0.0104]    1.02095      0.34341      6     
+
+CPU dt per phase (dragonseye, pi5):
+  dragonseye [('baseline', 0.0), ('push_A0', 0.001), ('rest_A0', 0.0055), ('push_A1', -0.0004), ('rest_A1', -0.0109), ('push_A2', -0.0077), ('rest_A2', -0.0004)]
+  pi5 [('baseline', 0.0), ('push_A0', -0.0229), ('rest_A0', -0.1128), ('push_A1', -0.1102), ('rest_A1', -0.067), ('push_A2', -0.0186), ('rest_A2', -0.0683)]
+Traceback (most recent call last):
+  File "C:\Users\affor\egt_repo_rebuild\current_repo\code\cr_mesh\cr_coil_link_pi5_com10.py", line 134, in <module>
+    out={'phase_log':plog,'cpu':cpu,'com10_url':COM10_URL,'ts':time.time()}
+                                                ^^^^^^^^^
+NameError: name 'COM10_URL' is not defined
