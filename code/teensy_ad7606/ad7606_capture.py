@@ -27,6 +27,21 @@ except ImportError:
     sys.exit("pip install pyserial")
 
 
+# AD7606 serial readout order => ch[i] = AIN(i+1). Confirmed by Brian's direct
+# wiring check 2026-10-12 (loopback confirmation of readout order still pending):
+CHANNEL_MAP = {
+    "ch0": "AIN1 - unused",
+    "ch1": "AIN2 - unused",
+    "ch2": "AIN3 - coil2 south (OPEN)",
+    "ch3": "AIN4 - coil2 north",
+    "ch4": "AIN5 - coil1 south (OPEN)",
+    "ch5": "AIN6 - coil1 north",
+    "ch6": "AIN7 - coil0 south",
+    "ch7": "AIN8 - coil0 NORTH (coil0 = only CLOSED loop)",
+}
+COIL_DIFF = {"coil0": "ch7-ch6 (closed)", "coil1": "ch5-ch4 (OPEN)", "coil2": "ch3-ch2 (OPEN)"}
+
+
 def parse_schedule(spec):
     """'push:4,read:8,rest:4' -> [('push',4.0),('read',8.0),('rest',4.0)] cycled."""
     out = []
@@ -119,6 +134,7 @@ def main():
             'firmware_header': hdr, 'n_records': n,
             'fields': ['t_us (teensy micros)', 'seq', 'ch[8] raw int16 counts', 'wall_us (host)', 'phase (if scheduled)'],
             'schedule': a.schedule, 'schedule_marks': sched_log,
+            'channel_map': CHANNEL_MAP, 'coil_diff': COIL_DIFF,
             'note': 'raw counts only; volts and any phase reduction are host-side analysis, separate file',
         }
         with open(out + '.json', 'w', encoding='utf-8') as f:

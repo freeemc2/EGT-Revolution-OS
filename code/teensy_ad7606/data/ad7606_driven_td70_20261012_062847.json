@@ -35,5 +35,17 @@
  ],
  "schedule": null,
  "schedule_marks": [],
- "note": "raw counts only; volts and any phase reduction are host-side analysis, separate file"
+ "note": "raw counts only; volts and any phase reduction are host-side analysis, separate file",
+ "channel_map": {
+  "ch0": "AIN1 - unused",
+  "ch1": "AIN2 - unused",
+  "ch2": "AIN3 - coil2 south (OPEN)",
+  "ch3": "AIN4 - coil2 north",
+  "ch4": "AIN5 - coil1 south (OPEN)",
+  "ch5": "AIN6 - coil1 north",
+  "ch6": "AIN7 - coil0 south",
+  "ch7": "AIN8 - coil0 NORTH (closed loop)"
+ },
+ "channel_map_source": "Brian direct wiring check 2026-10-12; ch[i]=AIN(i+1); loopback confirmation of readout order pending",
+ "reanalysis_note": "coil channels (ch2-7) + coil0 diff (ch7-ch6) read floor under TD70 drive; coil0 diff sd = sqrt(2)*single = pure uncorrelated noise, no common signal"
 }

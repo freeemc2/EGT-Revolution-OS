@@ -13,6 +13,28 @@
 | 3V3 | **VDRIVE** (if broken out) | → | logic reference; see correction 1 for the hard-tied-5V case |
 | GND | AGND/DGND | — | **common ground — the only shared rail** (Brian: separate supplies, shared ground) |
 
+## ⚡ Sense-tap channel map (Brian direct wiring check, 2026-10-12)
+
+AD7606 serial readout clocks V1→V8 in order, so **ch[i] = AIN(i+1)** in the data
+(loopback confirmation of the readout order still pending — adopt until then):
+
+| data ch | AD7606 pin | node | |
+|---|---|---|---|
+| ch0 | AIN1 | — | unused |
+| ch1 | AIN2 | — | unused |
+| ch2 | AIN3 | coil 2 **south** | **OPEN** |
+| ch3 | AIN4 | coil 2 north | |
+| ch4 | AIN5 | coil 1 **south** | **OPEN** |
+| ch5 | AIN6 | coil 1 north | |
+| ch6 | AIN7 | coil 0 south | |
+| ch7 | AIN8 | coil 0 **north** | **coil 0 is the only CLOSED loop** |
+
+Per-coil differential: coil0 = ch7−ch6 (closed), coil1 = ch5−ch4 (OPEN),
+coil2 = ch3−ch2 (OPEN). **Only coil 0 is a complete circuit** — coils 1 and 2
+have open south ends, so no loop current, so their taps measure an open node
+(expect them to behave as unconnected until the souths are landed). Future
+captures carry this map in the sidecar (`channel_map`, `coil_diff`).
+
 ## Config pins
 
 | AD7606 pin | tie to | effect |
