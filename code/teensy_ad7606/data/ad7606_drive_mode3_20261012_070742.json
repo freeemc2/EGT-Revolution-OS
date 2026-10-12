@@ -1,0 +1,54 @@
+{
+ "node": "DE",
+ "instrument": "teensy_ad7606 v1",
+ "port": "COM10",
+ "wall_origin_ns": 1791803265255844300,
+ "perf_origin_ns": 4155044540700,
+ "wall_origin_utc": "2026-10-12T11:07:45Z",
+ "rate_hz": 1000,
+ "range_label": "+/-5V",
+ "lsb_uV": 152.588,
+ "firmware_header": {
+  "hdr": 1,
+  "fw": "ad7606+drive v2",
+  "rate_hz": 1000,
+  "range_label": "+/-5V",
+  "lsb_uV_at_5V": 152.588,
+  "lsb_uV_at_10V": 305.176,
+  "os_bits": 0,
+  "drive": {
+   "mode": 3,
+   "base_hz": 16.0,
+   "overlay_hz": 20.0,
+   "mix": 1,
+   "td_pct": 70.0,
+   "running": true
+  }
+ },
+ "n_records": 60101,
+ "fields": [
+  "t_us (teensy micros)",
+  "seq",
+  "ch[8] raw int16 counts",
+  "wall_us (host)",
+  "phase (if scheduled)"
+ ],
+ "schedule": null,
+ "schedule_marks": [],
+ "channel_map": {
+  "ch0": "AIN1 - unused",
+  "ch1": "AIN2 - unused",
+  "ch2": "AIN3 - coil2 south (OPEN)",
+  "ch3": "AIN4 - coil2 north",
+  "ch4": "AIN5 - coil1 south (OPEN)",
+  "ch5": "AIN6 - coil1 north",
+  "ch6": "AIN7 - coil0 south",
+  "ch7": "AIN8 - coil0 NORTH (coil0 = only CLOSED loop)"
+ },
+ "coil_diff": {
+  "coil0": "ch7-ch6 (closed)",
+  "coil1": "ch5-ch4 (OPEN)",
+  "coil2": "ch3-ch2 (OPEN)"
+ },
+ "note": "raw counts only; volts and any phase reduction are host-side analysis, separate file"
+}
