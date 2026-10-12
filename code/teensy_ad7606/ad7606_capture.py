@@ -108,7 +108,7 @@ def main():
             jsonl.write(json.dumps(rec, separators=(',', ':')) + '\n')
             n += 1
     finally:
-        cmd('x')
+        cmd('g')   # stop streaming ONLY - 'x' would kill a running drive (v2)
         jsonl.close()
         side = {
             'node': a.node, 'instrument': 'teensy_ad7606 v1', 'port': a.port,
