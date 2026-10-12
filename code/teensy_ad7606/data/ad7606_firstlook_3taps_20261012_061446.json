@@ -1,0 +1,39 @@
+{
+ "node": "DE",
+ "instrument": "teensy_ad7606 v1",
+ "port": "COM10",
+ "wall_origin_ns": 1791800089215393100,
+ "perf_origin_ns": 979004089300,
+ "wall_origin_utc": "2026-10-12T10:14:49Z",
+ "rate_hz": 1000,
+ "range_label": "+/-5V",
+ "lsb_uV": 152.588,
+ "firmware_header": {
+  "hdr": 1,
+  "fw": "ad7606 v1",
+  "rate_hz": 1000,
+  "range_label": "+/-5V",
+  "lsb_uV_at_5V": 152.588,
+  "lsb_uV_at_10V": 305.176,
+  "os_bits": 0
+ },
+ "n_records": 60101,
+ "fields": [
+  "t_us (teensy micros)",
+  "seq",
+  "ch[8] raw int16 counts",
+  "wall_us (host)",
+  "phase (if scheduled)"
+ ],
+ "schedule": null,
+ "schedule_marks": [],
+ "note": "raw counts only; volts and any phase reduction are host-side analysis, separate file",
+ "channel_map": {
+  "ch0": "three-coil set leg A0 sense tap",
+  "ch1": "three-coil set leg A1 sense tap",
+  "ch2": "three-coil set leg A2 sense tap",
+  "ch3-ch7": "reference (shorted/unused)"
+ },
+ "rig": "THREE-COIL SET (Three Rocks rig) on this bench \u2014 NOT the OG 42-turn coil (correction, Brian direct 2026-10-12; earlier chat labels saying 'coil sense tap' generically are superseded by this map)",
+ "drive_state": "undriven during this capture (no drive source attached to the rig)"
+}
