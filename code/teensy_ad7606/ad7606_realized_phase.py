@@ -48,7 +48,7 @@ def load(fn):
                 continue
             try:
                 r = json.loads(line)
-                if len(r.get("ch", [])) == 8:
+                if len(r.get("ch", [])) >= 3:     # 8 = AD7606 taps, 3 = ADS1256 differential coils
                     rows.append(r)
             except json.JSONDecodeError:
                 pass
@@ -90,12 +90,18 @@ def main():
     ap.add_argument("--window-s", type=float, default=1.0)
     ap.add_argument("--snr", type=float, default=5.0, help="min A/noise to trust a window's phase")
     ap.add_argument("--coils", default="0,1:2,3:4,5", help="tapA,tapB pairs per coil")
+    ap.add_argument("--differential", action="store_true",
+                    help="channels are ALREADY differential (ADS1256): --coils is one index per coil, e.g. 0:1:2")
     a = ap.parse_args()
 
     rows = load(a.capture)
     if not rows:
         sys.exit("no valid records")
-    coils = [tuple(int(i) for i in c.split(",")) for c in a.coils.split(":")]
+    if a.differential:
+        # one channel index per coil; no tap subtraction (the ADC read is already tapA-tapB)
+        coils = [(int(c), None) for c in (a.coils if ":" in a.coils or "," not in a.coils else "0:1:2").split(":")]
+    else:
+        coils = [tuple(int(i) for i in c.split(",")) for c in a.coils.split(":")]
     W = int(a.window_s * a.fs)
     nwin = len(rows) // W
     if nwin < 1:
@@ -114,7 +120,10 @@ def main():
         phis = []
         ok = True
         for ci, (ta, tb) in enumerate(coils):
-            diff = [seg[k]["ch"][ta] - seg[k]["ch"][tb] for k in range(W)]
+            if tb is None:
+                diff = [seg[k]["ch"][ta] for k in range(W)]          # already differential (ADS1256)
+            else:
+                diff = [seg[k]["ch"][ta] - seg[k]["ch"][tb] for k in range(W)]
             m = sum(diff) / W
             x = [v - m for v in diff]
             amp, ph = lockin(x, a.base, a.fs)
