@@ -1,4 +1,6 @@
-# Global Power Generation and Upward Lightning Frequency: An Unexamined Correlation
+# The Complete Anthology of Zeus Conquering His Father
+
+**Global Power Generation and Upward Lightning Frequency, 2000-2018**
 
 **Brian Tice**  
 Independent Researcher  
@@ -7,6 +9,8 @@ November 2026
 ## Abstract
 
 Upward-initiated lightning at instrumented tall structures has increased over the past two decades. Existing attribution studies correlate this trend exclusively with rising global temperatures. This paper tests an alternative variable that has never been entered into any published regression: cumulative electrical energy grounded by human generation. Using Gaisberg Tower flash counts (2000-2018), ALDIS detection-efficiency curves, WWLLN global stroke data, and EIA/Ember generation statistics, we find that generation explains 98% of variance in efficiency-corrected upward flash rates, while temperature's partial correlation controlling for generation falls to essentially zero. The response is superlinear: generation grew 55% over the span while corrected upward flashes grew 155%. We frame this as a hypothesis, not a conclusion, and call for independent replication.
+
+*Shockingly enthralling.*
 
 ## 1. Introduction
 
@@ -50,6 +54,8 @@ If efficiency-corrected upward flash rates at multiple instrumented towers (Gais
 ## 7. Conclusion
 
 An unexamined variable - cumulative grounded generation - outperforms the published explanation for upward lightning trends. The data to test it exists and is public. This paper does not claim mechanism; it claims the correlation deserves a seat at the table.
+
+Volume two will address mechanism: phase-tuning of grounded conductive arrays as an extraction interface, and the B-res resolution channel as the instrument that may eventually read the faint non-local substrate beneath the local equalization.
 
 ## References
 
