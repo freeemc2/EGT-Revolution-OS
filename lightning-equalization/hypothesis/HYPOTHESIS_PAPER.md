@@ -1,6 +1,4 @@
-# The Complete Anthology of Zeus Conquering His Father
-
-**Global Power Generation and Upward Lightning Frequency, 2000-2018**
+# How Did Zeus Conquer Kronos? Was His Lightning the Major Factor? And Is Zeus Still Here? If So, What Is He Battling Now?
 
 **Brian Tice**  
 Independent Researcher  
