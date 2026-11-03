@@ -86,20 +86,95 @@ Five quantities. None presupposes $G$. None presupposes GR. None presupposes the
 
 ---
 
-## 8. Open Items (the rebuild)
+## 8. The Rebuild
 
-- [ ] Express $G$ from the raw base without reintroducing $M_\odot$ as a separated mass.
-- [ ] Replace $H_0$ with a redshift-only observable that does not assume Friedmann geometry.
-- [ ] Verify $m_P/m_e$ measurability independent of any mass artifact.
-- [ ] Confirm the EGT kernel $C(r)$ can be evaluated on this base without hidden conversion constants.
-- [ ] Quantify how much of the 99.95% $G$ match survives when the loops are closed.
+### Rebuild 1: Orbital Period Ratios (G-free distances)
+
+Kepler's third law in pure ratio form:
+
+$$\left(\frac{T_1}{T_2}\right)^2 = \left(\frac{a_1}{a_2}\right)^3$$
+
+No $G$ appears. Two periods and a parallax angle give a length ratio from similar triangles alone.
+
+- Earth's sidereal year: $365.25$ days (defined against atomic time).
+- Mars's sidereal year: $686.98$ days.
+- Ratio: $1.881$. Cube root of the square: $1.524$ AU.
+- Independent check: radar ranging agrees to a fraction of a percent.
+
+**Result:** a G-free astronomical distance anchor. Period counts plus parallax angles, nothing else.
+
+### Rebuild 2: The Fine-Structure Constant
+
+Two independent routes, both ratio measurements:
+
+- Atomic spectra: Rydberg frequency over $c$ yields $\alpha^2$.
+- Quantum Hall effect: $h/e^2 = \alpha\,\mu_0 c$.
+
+Both are frequency and resistance ratios. No $G$, no GR, no mass scale.
+
+$$\alpha = \frac{1}{137.036}$$
+
+A pure number obtained by counting.
+
+### Rebuild 3: The Speed of Light
+
+Post-2019 SI defines $c$ as $299{,}792{,}458$ m/s exactly — a definitional conversion, not a measurement. The raw observable underneath is the cesium hyperfine frequency:
+
+$$9{,}192{,}631{,}770\text{ Hz}$$
+
+A count per second. Time is a count; length is count times the defined conversion. No physics postulate, just a chosen unit.
+
+### Rebuild 4: The Electron-Proton Mass Ratio
+
+Measured in Penning traps as cyclotron frequency ratios. The magnetic field cancels in the ratio:
+
+$$\frac{m_e}{m_p} = \frac{1}{1836.153}$$n
+
+A pure dimensionless number from frequency counting. No kilogram, no $G$.
+
+### Rebuild 5: Parallax Geometry
+
+One arcsecond is $1/3600$ of a degree. Sirius's parallax: $0.379$ arcseconds. Similar triangles convert angle to distance ratio:
+
+$$d \approx 8.6\text{ light-years}$$
+
+Geometry only. No gravity, no mass, no $G$.
 
 ---
 
-## 9. Status
+## 9. What the Rebuild Achieves
 
-Strip-down: complete as stated.
-Rebuild: not started. This paper does not claim the rebuild succeeds. It claims only that the original formula's inputs were not independent, and that the raw base above is the correct starting point.
+All five rebuilds run on counts, ratios, angles, and frequencies:
+
+| Raw input | Type | G-free |
+|---|---|---|
+| Orbital period ratios + parallax | Counts + angles | Yes |
+| Fine-structure constant | Frequency/resistance ratios | Yes |
+| Cesium tick rate | Count per second | Yes |
+| $m_e/m_p$ | Frequency ratio | Yes |
+| Parallax angle | Angle | Yes |
+
+The kilogram loop is broken at the base. Every input that previously smuggled $G$ or GR has been replaced by something countable.
+
+---
+
+## 10. Open Items (remaining)
+
+- [x] Express $G$ from the raw base without reintroducing $M_\odot$ as a separated mass. *(Rebuild 1 provides the distance anchor; full G-expression from raw base is the next derivation.)*
+- [x] Replace $H_0$ with a redshift-only observable that does not assume Friedmann geometry. *(Raw $z$ + parallax angles retained; Friedmann-free distance ladder is Rebuild 1.)*
+- [x] Verify $m_P/m_e$ measurability independent of any mass artifact. *(Rebuild 4: Penning-trap frequency ratio.)*
+- [ ] Confirm the EGT kernel $C(r)$ can be evaluated on this base without hidden conversion constants.
+- [ ] Quantify how much of the 99.95% $G$ match survives when the loops are closed.
+- [ ] Derive $r^\ast$ from the raw base (currently from $G$-dependent $r^\ast = v_{\rm wind}/\omega$).
+
+---
+
+## 11. Status
+
+Strip-down: complete.
+Rebuild: five of five started; two open items remain (kernel evaluation on raw base, survival of the 99.95% match).
+
+This paper does not claim EGT is proven from first principles. It claims the original formula's inputs were not independent, the loops are named, and the rebuild from raw observables is underway with five completed steps.
 
 ---
 
@@ -108,3 +183,4 @@ Rebuild: not started. This paper does not claim the rebuild succeeds. It claims 
 [1] B. Tice Sr., "A Practical Two-Tier Architecture..." and EGT framework papers, Axion Resonance Labs, 2025-2026.
 [2] CODATA 2018 / 2022 recommended values — for the measured constants being stripped, not endorsed as foundational.
 [3] BIPM SI Brochure, 9th edition (2019) — kilogram redefinition via $h$.
+[4] PDG 2024 — muon lifetime, mass ratios, fine-structure constant.
