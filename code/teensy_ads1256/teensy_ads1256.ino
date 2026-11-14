@@ -26,7 +26,7 @@
     pin 2 -> 220R -> coil0, pin 3 -> coil1, pin 4 -> coil2; winding souths -> GND.
 
   Serial (115200 framing ignored; native USB):
-    P            -> "R PONG ads1256+drive v1 <sps> PGA<g> mode<m>"
+    P            -> "R PONG ads1256+drive v2 <sps> PGA<g> mode<m>"
     --- read side ---
     G            -> start free-run streaming (round-robin 3 differential coils)
     g            -> stop streaming only (drive survives)
@@ -75,6 +75,17 @@ int pga = 64;
 long sps = 1000;
 bool streaming = false;
 uint32_t seq = 0;
+
+// --- drive-referenced I/Q lock-in (v2) ---
+// Correlate each coil's samples against the DRIVE's own base-phase accumulator
+// (same Teensy clock as the drive ISR -> no async clock smear). Integrate over a
+// window; a long window = tight bandwidth = rejects 60 Hz mains for free.
+bool   lockin_stream = false;
+double liI[3] = {0,0,0}, liQ[3] = {0,0,0};
+long   liN[3] = {0,0,0};
+uint32_t li_window_ms = 1000;      // integration window (set with 'IW <ms>')
+elapsedMillis li_since;
+uint32_t li_seq = 0;
 
 void ads_wait_drdy(uint32_t to_us=100000){ elapsedMicros t; while(digitalReadFast(PIN_DRDY)){ if(t>to_us) return; } }
 
@@ -208,7 +219,7 @@ void driveStopAll(){ if(driveTimerOn){ tick.end(); driveTimerOn=false; } driveMo
 // ---------- output ----------
 void emit_header(){
   float lsb_nV = (2.0f*VREF/pga)/16777216.0f*1e9f;
-  Serial.print("{\"hdr\":1,\"fw\":\"ads1256+drive v1\",\"sps\":"); Serial.print(sps);
+  Serial.print("{\"hdr\":1,\"fw\":\"ads1256+drive v2\",\"sps\":"); Serial.print(sps);
   Serial.print(",\"pga\":"); Serial.print(pga);
   Serial.print(",\"vref\":"); Serial.print(VREF,3);
   Serial.print(",\"lsb_nV\":"); Serial.print(lsb_nV,3);
@@ -231,7 +242,36 @@ void emit_round(){
   Serial.print(c1); Serial.print(','); Serial.print(c2); Serial.println("]}");
 }
 
+// read a coil AND accumulate drive-referenced I/Q against the base drive phase
+void lockin_accum(int ci){
+  int32_t v = ads_read_coil(ci);
+  float ph; noInterrupts(); ph = phase; interrupts();   // the DRIVE's own base phase, now
+  liI[ci] += (double)v * cosf(ph);
+  liQ[ci] += (double)v * sinf(ph);
+  liN[ci]++;
+}
+
+void emit_lockin(){
+  Serial.print("{\"li\":1,\"t_us\":"); Serial.print(micros());
+  Serial.print(",\"seq\":"); Serial.print(li_seq++);
+  Serial.print(",\"win_ms\":"); Serial.print(li_window_ms);
+  Serial.print(",\"base_hz\":"); Serial.print(baseFreq);
+  for(int ci=0; ci<3; ci++){
+    double I=liI[ci], Q=liQ[ci]; long nn=liN[ci];
+    // realized phase of the coil relative to the drive (v=A cos(ph+phi) -> phi=-atan2(Q,I))
+    float phi = nn ? -atan2f((float)Q,(float)I)*180.0f/PI_F : 0.0f;
+    float mag = nn ? 2.0f*sqrtf((float)(I*I+Q*Q))/nn : 0.0f;
+    Serial.print(",\"c"); Serial.print(ci); Serial.print("\":{\"phi\":");
+    Serial.print(phi,2); Serial.print(",\"mag\":"); Serial.print(mag,2);
+    Serial.print(",\"n\":"); Serial.print(nn); Serial.print("}");
+    liI[ci]=liQ[ci]=0; liN[ci]=0;
+  }
+  Serial.println("}");
+}
+
 void handle_line(char*line){
+  if (line[0]=='I' && line[1]=='W'){ long v=atol(line+2); if(v>=50 && v<=60000){ li_window_ms=v; }
+    Serial.print("R IWIN "); Serial.println(li_window_ms); return; }
   if(line[0]=='T'&&line[1]=='M'){ overlayMix=atoi(line+2); Serial.print("R TMIX "); Serial.println(overlayMix); return; }
   if(line[0]=='T'&&line[1]=='D'){ float d=atof(line+2)/100.0f; overlayDuty=d<0?0:(d>1?1:d);
     Serial.print("R TDUTY "); Serial.println(overlayDuty*100.0f); return; }
@@ -240,11 +280,15 @@ void handle_line(char*line){
   if(line[0]=='D'&&line[1]=='R'){ long v=atol(line+2); if(v>=2&&v<=30000){ sps=v; ads_init(); emit_header(); }
     else Serial.println("{\"err\":\"DR 2..30000\"}"); return; }
   switch(line[0]){
-    case 'P': Serial.print("R PONG ads1256+drive v1 "); Serial.print(sps);
+    case 'P': Serial.print("R PONG ads1256+drive v2 "); Serial.print(sps);
       Serial.print(" PGA"); Serial.print(pga); Serial.print(" mode"); Serial.println(driveMode); break;
     case 'G': streaming=true; seq=0; emit_header(); break;
     case 'g': streaming=false; Serial.println("R STREAMOFF"); break;
-    case 'x': streaming=false; driveStopAll(); Serial.println("R LOCKED off"); break;
+    case 'Y': lockin_stream=true; streaming=false; li_seq=0;
+              for(int i=0;i<3;i++){liI[i]=liQ[i]=0;liN[i]=0;} li_since=0;
+              emit_header(); Serial.println("R LOCKIN on"); break;
+    case 'y': lockin_stream=false; Serial.println("R LOCKIN off"); break;
+    case 'x': streaming=false; lockin_stream=false; driveStopAll(); Serial.println("R LOCKED off"); break;
     case 'C': emit_round(); break;
     case 'I': ads_init(); Serial.println("R ADSINIT"); break;
     case 'D': ads_diag(); break;
@@ -306,5 +350,9 @@ void loop(){
     if(c=='\n'||c=='\r'){ if(blen){ buf[blen]=0; handle_line(buf); blen=0; } }
     else if(blen<47) buf[blen++]=c;
   }
-  if(streaming) emit_round();   // free-run: as fast as settled round-robin allows
+  if(lockin_stream){
+    lockin_accum(0); lockin_accum(1); lockin_accum(2);   // drive-referenced I/Q per coil
+    if(li_since >= li_window_ms){ li_since = 0; emit_lockin(); }
+  }
+  else if(streaming) emit_round();   // free-run raw: as fast as settled round-robin allows
 }
