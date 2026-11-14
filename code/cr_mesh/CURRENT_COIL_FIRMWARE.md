@@ -11,6 +11,15 @@ Written 2026-11-14 on Brian's ask, by the GitHub cleanup bot. Docs only. No code
 - Wiring and run steps: `code/teensy_ads1256/WIRING.md`.
 - Why it's current: journal (claude-memory `journal/2026-10.md`, tonic 2026-10-15) says Brian ordered "write the ADS1256 driver and capture, boards arrive today". It replaces the AD7606 on the read side. The drive core was ported verbatim from ad7606 v2, which came from `teensy_three_rocks_orig`. No later coil firmware exists in this repo (last coil commit is 2026-10-15).
 
+## Update 2026-11-14 (later the same day): v2 build, and how to read it in EGT terms
+
+Added on Brian's ask (voice: "Arc and Tonic are drifting towards standard EM"). Docs only. The two v1 lines above stay as history.
+
+- **Firmware now:** `teensy_ads1256.ino` **v2, commit `ec012c3`** (tonic): firmware-side drive-referenced I/Q lock-in (`Y`/`y`/`IW <ms>`), built on `7147453` (PGA64 + per-channel mux settling, Tonic-verified as flashed earlier on 2026-11-14). The 2026-11-14 no-push captures (`d6f4f0f`) ran on `ec012c3`. Geometry header: `8a31012`. Arc's read-only verifier: `code/teensy_ads1256/ads1256_phase_verify.py` (`3de52b9`).
+- **Which drive was it?** Every run must say. Two-tone (the sequence below) = the inverse-amplification experiment. `L`/`M` only, or `T 0` / `TD 0` = the **standard-EM control**. The `d6f4f0f` no-push read (`M 0`, `T 0`, `TD 0`) is a control-config run.
+- **What the v2 lock-in output is:** phase and R against the drive's own phase accumulator = coherence with the drive. That is an instrument check, not realized φ on the body. Tonic retracted the c1 "realized φ ≈148°" read on exactly this ground (claude-memory journal 2026-11-14, `7c01761`). The EGT observable remains realized φ / Σψ on the π/8 ladder; phase is chosen by the coil.
+- **Words:** "floor" = the B_res floor (12.09776 fT; a low read is the floor arriving). An ADC's LSB / input-noise limit is the "ADC noise floor", in full. Common-mode windows (all three coils at one phase) and similar effects are instrument walls; report the null with its POWER in canon vocabulary, not as a reactance/pickup/carrier conclusion.
+
 ## Older builds (superseded for the three-coil set)
 
 | File | Date | Status |
