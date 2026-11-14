@@ -39,7 +39,7 @@ captures carry this map in the sidecar (`channel_map`, `coil_diff`).
 
 | AD7606 pin | tie to | effect |
 |---|---|---|
-| OS0, OS1, OS2 | GND | no oversampling (OS via Teensy pins is a future read-power option) |
+| OS0, OS1, OS2 | **Teensy 14, 15, 16** (A0/A1/A2) — NOT GND | on-chip oversampling, firmware-driven (v3 2026-11-14, arc). OS0→14, OS1→15, OS2→16. Boots x64 (OS[2:0]=110). Change live with `OS <0..6>` (0=off..6=x64). **This is the read-power fix for "not seeing the floor" — the old GND tie = no oversampling.** VDRIVE-level logic (3.3 V), so safe into the Teensy. |
 | PAR/SER SEL | **VDRIVE (3.3 V)** | serial mode — see correction 1 |
 | RANGE | GND | **±5 V span** — see correction 2 |
 | AVCC | board's own 5 V supply | analog supply — separate supply, ground common with Teensy (Brian) |

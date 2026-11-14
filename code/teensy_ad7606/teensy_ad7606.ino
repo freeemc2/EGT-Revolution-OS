@@ -11,7 +11,11 @@
 
   Wiring:
     AD7606 (see WIRING.md): SCLK 13, DOUTA 12, CS 10, RESET 7, CONVST A+B 9, BUSY 8;
-      VDRIVE 3.3 V, RANGE=GND (+/-5 V), OS=GND, own 5 V analog supply, shared GND.
+      VDRIVE 3.3 V, RANGE=GND (+/-5 V), own 5 V analog supply, shared GND.
+      OS0/OS1/OS2 -> Teensy 14/15/16 (A0/A1/A2), NOT GND (v3 2026-11-14, arc): on-chip
+      oversampling now firmware-driven, boots x64. OLD build tied OS->GND = no OS, which
+      is why the instrument "wasn't seeing the floor" below ~1 LSB. Move the 3 OS jumpers
+      off GND onto 14/15/16 at the bench, then re-run the shorted-input noise capture.
     Drive (WIRING v2 2026-09-15, Brian-verified): pin 2 -> 220R -> C1, pin 3 -> C2,
       pin 4 -> C3; winding south ends -> GND. Taps: leg senses -> V1..V3.
 
@@ -22,6 +26,8 @@
     C           -> one conversion, one JSON line
     S <hz>      -> ADC sample rate (1..5000)
     V <5|10>    -> RANGE label for headers (label only, never rescales)
+    OS <0..6>   -> on-chip oversampling: 0=off,1=x2,2=x4,3=x8,4=x16,5=x32,6=x64
+                   (floor drops ~sqrt(ratio); higher OS lengthens the conversion)
     R           -> pulse AD7606 RESET
     --- drive side (orig semantics, same letters as the bench knows) ---
     L <freq>    -> set base freq + START drive timer (needs M first, as ever)
@@ -45,11 +51,13 @@
 // ---------- AD7606 read side ----------
 const int PIN_SCLK = 13, PIN_DOUT = 12, PIN_CS = 10;
 const int PIN_RESET = 7, PIN_CONVST = 9, PIN_BUSY = 8;
+const int PIN_OS0 = 14, PIN_OS1 = 15, PIN_OS2 = 16;  // OS[2:0], was GND (v3 arc)
 SPISettings SPI_CFG(8000000, MSBFIRST, SPI_MODE2);
 
 uint32_t rate_hz = 1000;
 uint32_t period_us = 1000;
 uint8_t range_label = 5;
+uint8_t os_code = 6;   // AD7606 OS[2:0]: 0=off..6=x64; boots x64 (Brian "turn it on")
 bool streaming = false;
 uint32_t seq = 0;
 elapsedMicros since_last;
@@ -136,6 +144,12 @@ void driveStopAll() {
 }
 
 // ---------- read side ----------
+void applyOS() {   // latch OS[2:0] on the pins; AD7606 samples them at the CONVST edge
+  digitalWriteFast(PIN_OS0, (os_code >> 0) & 1);
+  digitalWriteFast(PIN_OS1, (os_code >> 1) & 1);
+  digitalWriteFast(PIN_OS2, (os_code >> 2) & 1);
+}
+
 void adc_reset() {
   digitalWriteFast(PIN_RESET, HIGH);
   delayMicroseconds(2);
@@ -144,11 +158,13 @@ void adc_reset() {
 }
 
 void emit_header() {
-  Serial.print("{\"hdr\":1,\"fw\":\"ad7606+drive v2\",\"rate_hz\":");
+  Serial.print("{\"hdr\":1,\"fw\":\"ad7606+drive v3\",\"rate_hz\":");
   Serial.print(rate_hz);
   Serial.print(",\"range_label\":\"+/-");
   Serial.print(range_label);
-  Serial.print("V\",\"lsb_uV_at_5V\":152.588,\"lsb_uV_at_10V\":305.176,\"os_bits\":0");
+  Serial.print("V\",\"lsb_uV_at_5V\":152.588,\"lsb_uV_at_10V\":305.176,\"os_code\":");
+  Serial.print(os_code);
+  Serial.print(",\"os_ratio\":"); Serial.print(1 << os_code);
   Serial.print(",\"drive\":{\"mode\":"); Serial.print(driveMode);
   Serial.print(",\"base_hz\":");  Serial.print(baseFreq);
   Serial.print(",\"overlay_hz\":"); Serial.print(ovlFreq);
@@ -205,11 +221,20 @@ void handle_line(char *line) {
     }
     return;
   }
+  if (line[0] == 'O' && line[1] == 'S') {   // OS <0..6> — on-chip oversampling (before single-letter 'O')
+    int n = atoi(line + 2);
+    if (n >= 0 && n <= 6) {
+      os_code = n; applyOS();
+      Serial.print("R OS x"); Serial.println(1 << os_code);
+      emit_header();
+    } else Serial.println("{\"err\":\"OS 0..6 = x1..x64\"}");
+    return;
+  }
   switch (line[0]) {
     case 'P':
-      Serial.print("R PONG ad7606+drive v2 "); Serial.print(rate_hz);
-      Serial.print(" +/-"); Serial.print(range_label); Serial.print("V mode");
-      Serial.println(driveMode);
+      Serial.print("R PONG ad7606+drive v3 "); Serial.print(rate_hz);
+      Serial.print(" +/-"); Serial.print(range_label); Serial.print("V OSx"); Serial.print(1 << os_code);
+      Serial.print(" mode"); Serial.println(driveMode);
       break;
     case 'G': streaming = true; seq = 0; since_last = 0; emit_header(); break;
     case 'g': streaming = false; Serial.println("R STREAMOFF"); break;
@@ -266,6 +291,8 @@ void setup() {
   pinMode(PIN_RESET, OUTPUT);  digitalWriteFast(PIN_RESET, LOW);
   pinMode(PIN_CONVST, OUTPUT); digitalWriteFast(PIN_CONVST, HIGH);
   pinMode(PIN_BUSY, INPUT);
+  pinMode(PIN_OS0, OUTPUT); pinMode(PIN_OS1, OUTPUT); pinMode(PIN_OS2, OUTPUT);
+  applyOS();   // drive OS[2:0] to the boot ratio (x64) before the first conversion
   for (int k = 0; k < N_COILS; k++) { pinMode(DRIVE_PINS[k], OUTPUT); digitalWriteFast(DRIVE_PINS[k], LOW); }
   SPI.begin();
   Serial.begin(115200);
