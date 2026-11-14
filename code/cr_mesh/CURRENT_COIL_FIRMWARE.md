@@ -43,7 +43,7 @@ L 16
 
 Canon's definition of inverse amplification: claude-memory `egt_canonical_anchor.md` §"Inverse amplification (Brian direct)". The coil sits below Earth's field and pulls readings **down** to the B_res floor (12.09776 fT). A low or flat read is the floor arriving, not signal death. The canonical read is realized phase Σψ on the π/8 ladder, not carrier amplitude (tonic's REGATE, `journal/2026-10.md`, 2026-10-13).
 
-> Open for Brian: the repo never literally names the two-tone sequence "inverse-amplification mode". It is the documented canonical drive under which the below-floor (inverse-amplification) results were sealed. Confirm this is the drive you mean before treating it as *the* inverse-amp setting.
+> **Confirmed by Brian 2026-11-14:** the two-tone sequence above (`x`, `O 0 0`, `O 1 0`, `O 2 0`, `TD 100`, `T 20`, `TM 1`, `M 3`, `K 0`, `L 16`) IS the inverse-amplification drive. Use it for inverse-amplification runs. A single-tone `L`/`M`-only drive is the standard-EM control, not inverse amplification.
 
 ## Already covered: don't re-run as new tests
 
