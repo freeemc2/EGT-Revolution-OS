@@ -59,3 +59,20 @@ Canon's definition of inverse amplification: claude-memory `egt_canonical_anchor
 - **Drive-to-tap carrier hunt (standard-EM read):** withdrawn as drift 2026-10-13 (tonic REGATE). A missing Ohm's-law carrier at the tap is not a fault and not a result.
 - **AD7606 instrument qualification** (shorted-input floor + power statement, commit `84e814d`) and the channel map (`acfad1e`). ADS1256 compile-check: per its own WIRING.md, it "compiles clean for teensy41".
 - Caveat: largo logged "TEST VOID" (Brian direct) on 2026-10-09 for the #2/#7 re-runs, because the original #1–#8 redis seals are absent (`journal/2026-10.md` L178). Brian decides how that bears on the canon list.
+
+## Mesh / nodes vs the experiment (audit 2026-11-14, read-only; NOT changed, for Brian's call)
+
+The mesh pieces in this repo below were written for older rigs. None of them currently follows the confirmed inverse-amplification experiment (ADS1256 board, two-tone TD100 drive). They are listed, not changed, because each one touches live behavior, analysis targets or canon framing.
+
+| Where | What it does now | Divergence from the experiment |
+|---|---|---|
+| `code/cr_mesh/BENCH_CLAIM.json` L2–4 | Claims port **COM8** for "Three Rocks … teensy_three_rocks firmware", WATCH-ONLY | The experiment board runs `teensy_ads1256` (journal: COM10 holds the experiment, 2026-10-12/15). **COM10 is not claimed**, so nothing stops a mesh process from opening it. The redis mirror `cadence:bench:claim` is live-only. The release/claim rule is "Brian's word only". |
+| `code/cr_mesh/cr_supervisor.py` L66–97 | teensy-b (COM10) and coil-hold (COM8) entries are commented out. The "cadence" node "holds phase at pi/2". The "brian" node is "held at 5pi/8 = arg C(2.5)". | Both phase holds use targets canon withdrew (π/2 on 2026-10-06; πr/4 → 5π/8 on 2026-10-04). The mesh nodes are not keyed to the ADS1256 run at all. |
+| `code/cr_mesh/cr_sweep_bridge.py` L24 | `TARGET_DEG = 314.2969` (= 90 + 22.5k) | Built on the withdrawn 90° origin. |
+| `code/cr_mesh/teensy_three_rocks/tstate_publish.py` L26 | `TARGET_DEG = 90.0  # canonical coil target pi/2` | π/2 target withdrawn 2026-10-06. |
+| `code/cr_mesh/cr_coil_api.py` | Two-tone start (L92–105) **matches** the experiment. Reads parse three_rocks internal lock-in `T` lines on pi5 `/dev/ttyACM0`. | The ADS1256 firmware streams raw JSON counts, not `T` lines, so this API cannot read the ADS1256 board as written. |
+| `code/cr_mesh/cr_coil_link_pi5_com10.py` | Reads COM10 through tonic's `:8094` endpoint (claude-memory `data/coilset_era1_2026-09/tonic/com10_read_endpoint.py`) | That endpoint drives **single-tone** (`T 0`, `TM 0`, `TD 0`, `K 1`, `M 1`) = the standard-EM control. Its anchor pair uses φ₀ = 90°, which is withdrawn. |
+| `code/cr_mesh/teensy_three_rocks/` scripts (`calib_clock.py`, `separation.py`, `measure_rods.py`, `ping_followers.py`, `state_console.py`, `ask_rungs.py`) | Single-tone `M 1`/`K`, `L 12`, etc. | Historical three_rocks bench protocols. If re-run, they are standard-EM controls, not the inverse-amplification drive. |
+
+Live-only (not in any repo, so it can't be verified here): the running supervisor and mesh processes on Dragonseye, the pi5 `cr_coil_api` service, tonic's `:8094` endpoint process, the redis bench claim, and whatever host script Tonic uses to send the drive on the bench.
+
