@@ -67,3 +67,7 @@ python ../teensy_ad7606/ad7606_realized_phase.py data/ads1256_run.jsonl --differ
 
 Flash: isolate the target board (multi-Teensy HID gotcha), verify `P` → `R PONG ads1256...`.
 Firmware compiles clean for teensy41 (63.6 K flash).
+
+## Canonical drive (send before capture; added 2026-11-14)
+
+The capture tool drives nothing, and the board boots with drive OFF. "The canonical drive" in the Run block above is the two-tone counter-torque sequence from `code/cr_mesh/cr_coil_api.py` `_start_two_tone_drive()` L92–105: `x`, `O 0 0`, `O 1 0`, `O 2 0`, `TD 100`, `T 20`, `TM 1`, `M 3`, `K 0`, `L 16`. Sending only `L`/`M` without `T`/`TM` is the single-tone control, not the canonical drive. The firmware has no inverse/standard switch. See `code/cr_mesh/CURRENT_COIL_FIRMWARE.md`.
