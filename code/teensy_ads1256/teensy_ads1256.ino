@@ -51,8 +51,8 @@
 // ---------- ADS1256 read side ----------
 const int PIN_SCLK = 13, PIN_DIN = 11, PIN_DOUT = 12, PIN_CS = 10;
 const int PIN_DRDY = 9, PIN_RST = 8, PIN_PDWN = 7;
-// ADS1256 SCLK max ~ fCLKIN/4 (~1.92 MHz @ 7.68 MHz). Use 1 MHz, MODE 1.
-SPISettings ADS_SPI(1000000, MSBFIRST, SPI_MODE1);
+// ADS1256 SCLK max ~ fCLKIN/4 (~1.92 MHz @ 7.68 MHz). 500 kHz for WREG margin, MODE 1.
+SPISettings ADS_SPI(500000, MSBFIRST, SPI_MODE1);
 
 // commands
 const uint8_t CMD_WAKEUP=0x00, CMD_RDATA=0x01, CMD_SDATAC=0x0F, CMD_RREG=0x10,
@@ -79,16 +79,39 @@ uint32_t seq = 0;
 void ads_wait_drdy(uint32_t to_us=100000){ elapsedMicros t; while(digitalReadFast(PIN_DRDY)){ if(t>to_us) return; } }
 
 void ads_wreg(uint8_t reg, uint8_t val){
+  ads_wait_drdy();                     // DRDY low before a register write, or the chip drops it
   SPI.beginTransaction(ADS_SPI); digitalWriteFast(PIN_CS,LOW);
   SPI.transfer(CMD_WREG|reg); SPI.transfer(0x00); SPI.transfer(val);
   digitalWriteFast(PIN_CS,HIGH); SPI.endTransaction();
-  delayMicroseconds(10);
+  delayMicroseconds(50);
 }
 
 void ads_cmd(uint8_t c){
   SPI.beginTransaction(ADS_SPI); digitalWriteFast(PIN_CS,LOW);
   SPI.transfer(c); digitalWriteFast(PIN_CS,HIGH); SPI.endTransaction();
   delayMicroseconds(10);
+}
+
+uint8_t ads_rreg(uint8_t reg){
+  SPI.beginTransaction(ADS_SPI); digitalWriteFast(PIN_CS,LOW);
+  SPI.transfer(CMD_RREG|reg); SPI.transfer(0x00);
+  delayMicroseconds(10);                 // t6 before data
+  uint8_t v=SPI.transfer(0x00);
+  digitalWriteFast(PIN_CS,HIGH); SPI.endTransaction();
+  delayMicroseconds(10);
+  return v;
+}
+
+void ads_diag(){
+  // RREG STATUS(0),MUX(1),ADCON(2),DRATE(3); STATUS top nibble = chip ID (ADS1256 = 0x3)
+  uint8_t st=ads_rreg(0x00), mx=ads_rreg(0x01), ad=ads_rreg(0x02), dr=ads_rreg(0x03);
+  Serial.print("{\"diag\":1,\"STATUS\":"); Serial.print(st);
+  Serial.print(",\"chip_id\":"); Serial.print(st>>4);
+  Serial.print(",\"MUX\":"); Serial.print(mx);
+  Serial.print(",\"ADCON\":"); Serial.print(ad);
+  Serial.print(",\"DRATE\":"); Serial.print(dr);
+  Serial.print(",\"DRDY_pin\":"); Serial.print(digitalReadFast(PIN_DRDY));
+  Serial.println("}");
 }
 
 void ads_reset(){
@@ -99,11 +122,19 @@ void ads_reset(){
 
 void ads_init(){
   ads_reset();
+  delay(10);
   ads_cmd(CMD_SDATAC);                 // stop continuous so we can WREG
-  ads_wreg(REG_STATUS, 0x01);          // MSB first, auto-cal off, analog buffer ON (bit0)
-  ads_wreg(REG_ADCON,  pga_code(pga)); // clkout off, sensor-detect off, PGA
-  ads_wreg(REG_DRATE,  drate_code(sps));
+  delayMicroseconds(200);              // let the chip settle before the first WREG
+  ads_wreg(REG_STATUS, 0x04);          // MSB first, auto-cal ON, analog buffer off
+  delayMicroseconds(100);
   ads_wreg(REG_MUX,    MUX_COIL[0]);
+  delayMicroseconds(100);
+  ads_wreg(REG_DRATE,  drate_code(sps));
+  delayMicroseconds(100);
+  ads_wreg(REG_ADCON,  pga_code(pga)); // PGA written LAST (early writes were being dropped)
+  delayMicroseconds(100);
+  // verify ADCON took; one retry
+  if (ads_rreg(REG_ADCON) != pga_code(pga)) { ads_wreg(REG_ADCON, pga_code(pga)); delayMicroseconds(100); }
   ads_cmd(CMD_SELFCAL);
   ads_wait_drdy(500000);
 }
@@ -202,6 +233,15 @@ void handle_line(char*line){
     case 'x': streaming=false; driveStopAll(); Serial.println("R LOCKED off"); break;
     case 'C': emit_round(); break;
     case 'I': ads_init(); Serial.println("R ADSINIT"); break;
+    case 'D': ads_diag(); break;
+    case 'W': {   // watch DRDY for 1 s: count transitions, min/max — is the chip converting?
+      uint32_t t0=millis(); int last=digitalReadFast(PIN_DRDY); int trans=0, lo=0, hi=0;
+      while(millis()-t0<1000){ int v=digitalReadFast(PIN_DRDY); if(v)hi++; else lo++;
+        if(v!=last){ trans++; last=v; } }
+      Serial.print("{\"drdy_watch\":1,\"transitions\":"); Serial.print(trans);
+      Serial.print(",\"samples_low\":"); Serial.print(lo);
+      Serial.print(",\"samples_high\":"); Serial.print(hi); Serial.println("}");
+      break; }
     case 'Z': ads_cmd(CMD_SELFCAL); ads_wait_drdy(500000); Serial.println("R SELFCAL"); break;
     case 'L':{ float f=atof(line+1); if(f>0&&f<=30000){ setBaseFreq(f); driveStart();
       Serial.print("R LOCK "); Serial.println(f); emit_header(); } else Serial.println("{\"err\":\"L freq\"}"); break; }
