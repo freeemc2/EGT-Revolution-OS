@@ -131,27 +131,41 @@ void ads_init(){
   delayMicroseconds(100);
   ads_wreg(REG_DRATE,  drate_code(sps));
   delayMicroseconds(100);
-  ads_wreg(REG_ADCON,  pga_code(pga)); // PGA written LAST (early writes were being dropped)
-  delayMicroseconds(100);
-  // verify ADCON took; one retry
-  if (ads_rreg(REG_ADCON) != pga_code(pga)) { ads_wreg(REG_ADCON, pga_code(pga)); delayMicroseconds(100); }
-  ads_cmd(CMD_SELFCAL);
+  ads_cmd(CMD_SELFCAL);                 // calibrate FIRST ...
   ads_wait_drdy(500000);
+  delay(20);                            // let the chip reach steady state (SELFCAL-adjacent writes get dropped)
+  // ... THEN set PGA in steady state, retry until it reads back (it sticks once settled)
+  for(int tries=0; tries<6; tries++){
+    ads_wreg(REG_ADCON, pga_code(pga));
+    delayMicroseconds(200);
+    if(ads_rreg(REG_ADCON)==pga_code(pga)) break;
+    delay(5);
+  }
 }
 
-// read one settled differential sample on coil index ci (changes MUX, SYNC/WAKEUP, waits DRDY)
+// settle count after a mux switch: discard this many conversions so the sinc filter
+// fully re-settles on the new channel before we read (kills mux-switch transients).
+int ads_settle = 3;
+
+// read one settled differential sample on coil index ci (changes MUX, SYNC/WAKEUP, settles, reads)
 int32_t ads_read_coil(int ci){
-  ads_wait_drdy();
-  ads_wreg(REG_MUX, MUX_COIL[ci]);
-  ads_cmd(CMD_SYNC);
-  ads_cmd(CMD_WAKEUP);
-  ads_wait_drdy();                     // settled conversion ready
+  // direct MUX write (no DRDY-wait inside the hot path) + SYNC/WAKEUP to restart the filter
+  SPI.beginTransaction(ADS_SPI); digitalWriteFast(PIN_CS,LOW);
+  SPI.transfer(CMD_WREG|REG_MUX); SPI.transfer(0x00); SPI.transfer(MUX_COIL[ci]);
+  digitalWriteFast(PIN_CS,HIGH); SPI.endTransaction();
+  delayMicroseconds(5);
+  ads_cmd(CMD_SYNC); ads_cmd(CMD_WAKEUP);
+  // discard ads_settle conversions (wait DRDY high->low each), read the next settled one
+  for(int k=0;k<ads_settle;k++){
+    elapsedMicros t; while(digitalReadFast(PIN_DRDY)==LOW){ if(t>5000) break; }  // wait high
+    t=0;             while(digitalReadFast(PIN_DRDY)==HIGH){ if(t>20000) break; } // wait low
+  }
   SPI.beginTransaction(ADS_SPI); digitalWriteFast(PIN_CS,LOW);
   SPI.transfer(CMD_RDATA);
-  delayMicroseconds(7);                // t6 ~ 50 tCLKIN before data
+  delayMicroseconds(7);
   uint32_t v = ((uint32_t)SPI.transfer(0)<<16)|((uint32_t)SPI.transfer(0)<<8)|SPI.transfer(0);
   digitalWriteFast(PIN_CS,HIGH); SPI.endTransaction();
-  if(v & 0x800000) v |= 0xFF000000;    // sign-extend 24->32
+  if(v & 0x800000) v |= 0xFF000000;
   return (int32_t)v;
 }
 
@@ -234,6 +248,16 @@ void handle_line(char*line){
     case 'C': emit_round(); break;
     case 'I': ads_init(); Serial.println("R ADSINIT"); break;
     case 'D': ads_diag(); break;
+    case 'Q': {  // live ADCON write/readback test
+      Serial.print("{\"adcon_before\":"); Serial.print(ads_rreg(REG_ADCON));
+      ads_wait_drdy(); ads_wreg(REG_ADCON, 0x06);  delayMicroseconds(100);
+      Serial.print(",\"after_0x06\":"); Serial.print(ads_rreg(REG_ADCON));
+      ads_wait_drdy(); ads_wreg(REG_ADCON, 0x26);  delayMicroseconds(100);
+      Serial.print(",\"after_0x26\":"); Serial.print(ads_rreg(REG_ADCON));
+      ads_wait_drdy(); ads_wreg(REG_DRATE, 0x82);   delayMicroseconds(100); // control: DRATE write
+      Serial.print(",\"drate_after_0x82\":"); Serial.print(ads_rreg(REG_DRATE));
+      Serial.println("}");
+      break; }
     case 'W': {   // watch DRDY for 1 s: count transitions, min/max — is the chip converting?
       uint32_t t0=millis(); int last=digitalReadFast(PIN_DRDY); int trans=0, lo=0, hi=0;
       while(millis()-t0<1000){ int v=digitalReadFast(PIN_DRDY); if(v)hi++; else lo++;
