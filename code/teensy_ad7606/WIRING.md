@@ -1,5 +1,7 @@
 # teensy_ad7606 — wiring (v1, 2026-10-11, tonic; from Grok's spec with two datasheet corrections)
 
+> **UPDATE 2026-11-14:** the AD7606 read side is superseded for the three-coil experiment by `code/teensy_ads1256/` (ADS1256 build, v1 2026-10-15). Use that firmware plus the confirmed inverse-amplification drive. See `code/cr_mesh/CURRENT_COIL_FIRMWARE.md`. This file is kept as the AD7606 record.
+
 ## Pin map (Grok spec, adopted as given)
 
 | Teensy 4.1 | AD7606 | dir | note |
