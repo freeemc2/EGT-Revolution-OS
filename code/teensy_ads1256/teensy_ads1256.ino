@@ -22,8 +22,16 @@
     NOTE: ADS1256 DOUT swings to DVDD. If the board's DVDD is 5V, protect Teensy
     pin 12 (series R / level shift) — Teensy 4.1 is NOT 5V-tolerant. 3.3V DVDD = direct.
 
-  --- Drive wiring (WIRING v2 2026-09-15, Brian-verified) ---
-    pin 2 -> 220R -> coil0, pin 3 -> coil1, pin 4 -> coil2; winding souths -> GND.
+  --- THREE-COIL SET geometry (Brian direct 2026-11-14) ---
+    Each coil = a 4-STRAND TWISTED winding, 64 turns, 3.5" PVC former, twist lay 11"
+    (one full twist / 11"), with a SENSE WIRE (runner) running UNDER the turns.
+    DRIVE: all 4 strands of a coil are in PARALLEL on ONE Teensy pin, through 220R:
+      pin 2 -> 220R -> coil0 (4 strands ||), pin 3 -> coil1, pin 4 -> coil2; winding souths -> GND.
+    READ: the SENSE RUNNER of each coil -> ADS1256 differential AIN pair (the runner reads
+      the axial field = inverse amplification; NOT the winding terminals).
+    n=4 strands spread geometric phase 2*pi*k/4 = 90 deg/strand = pi/2 = exactly 4 rungs on
+      the pi/8 ladder (inherent in the twist). The 'M 3' stagger (120 deg) is between the 3
+      COILS (frustrated triangle 0/120/240), not between strands.
 
   Serial (115200 framing ignored; native USB):
     P            -> "R PONG ads1256+drive v2 <sps> PGA<g> mode<m>"
