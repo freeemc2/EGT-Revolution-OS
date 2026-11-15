@@ -1,0 +1,55 @@
+{
+ "node": "DE",
+ "instrument": "teensy_ads1256 v2",
+ "port": "COM10",
+ "session": "20261115_084541",
+ "run_index": 1,
+ "run_tag": "forward",
+ "run_label": "FORWARD inverse (O 0/1/2 = 0\u00b0, two-tone XOR)",
+ "wall_origin_ns": 1794750494655572100,
+ "perf_origin_ns": 99629653827000,
+ "wall_origin_utc": "2026-11-15T13:48:14Z",
+ "pga": 64,
+ "data_rate_sps": 1000,
+ "vref": 2.5,
+ "lsb_nV": 4.656612873077393,
+ "firmware_header": null,
+ "n_records": 37501,
+ "channel_map": {
+  "ch0": "coil0 AIN0-AIN1 differential",
+  "ch1": "coil1 AIN2-AIN3 differential",
+  "ch2": "coil2 AIN4-AIN5 differential"
+ },
+ "drive": {
+  "type": "forward inverse-amplification (canonical two-tone XOR)",
+  "sequence": [
+   "x",
+   "O 0 0",
+   "O 1 0",
+   "O 2 0",
+   "TD 100",
+   "T 20",
+   "TM 1",
+   "M 3",
+   "K 0",
+   "L 16"
+  ],
+  "base_hz": 16,
+  "overlay_hz": 20,
+  "mix": "XOR (TM 1)",
+  "stagger": "120-deg (M 3)",
+  "td_pct": 100,
+  "coil_offsets_deg": [
+   0,
+   0,
+   0
+  ],
+  "note": "Forward = canonical drive direction, coil offsets 0\u00b0."
+ },
+ "fields": [
+  "t_us (teensy micros)",
+  "seq",
+  "ch[3] = 3 coils' raw signed 24-bit differential counts",
+  "wall_us"
+ ]
+}

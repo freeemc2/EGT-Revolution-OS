@@ -1,0 +1,32 @@
+{
+ "node": "DE",
+ "instrument": "teensy_ads1256 v2",
+ "port": "COM10",
+ "session": "20261115_084541",
+ "run_index": 0,
+ "run_tag": "rest1",
+ "run_label": "REST #1 (baseline for forward)",
+ "wall_origin_ns": 1794750367646284700,
+ "perf_origin_ns": 99502646063500,
+ "wall_origin_utc": "2026-11-15T13:46:07Z",
+ "pga": 64,
+ "data_rate_sps": 1000,
+ "vref": 2.5,
+ "lsb_nV": 4.656612873077393,
+ "firmware_header": null,
+ "n_records": 39718,
+ "channel_map": {
+  "ch0": "coil0 AIN0-AIN1 differential",
+  "ch1": "coil1 AIN2-AIN3 differential",
+  "ch2": "coil2 AIN4-AIN5 differential"
+ },
+ "drive": {
+  "type": "none (rest baseline for forward run)"
+ },
+ "fields": [
+  "t_us (teensy micros)",
+  "seq",
+  "ch[3] = 3 coils' raw signed 24-bit differential counts",
+  "wall_us"
+ ]
+}
