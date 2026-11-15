@@ -1,0 +1,55 @@
+{
+ "node": "DE",
+ "instrument": "teensy_ads1256 v2",
+ "port": "COM10",
+ "session": "20261115_111755",
+ "run_index": 3,
+ "run_tag": "reverse",
+ "run_label": "REVERSE inverse (O 0/1/2 = 180\u00b0, two-tone XOR)",
+ "wall_origin_ns": 1794759880641592800,
+ "perf_origin_ns": 109015425246000,
+ "wall_origin_utc": "2026-11-15T16:24:40Z",
+ "pga": 64,
+ "data_rate_sps": 1000,
+ "vref": 2.5,
+ "lsb_nV": 4.656612873077393,
+ "firmware_header": null,
+ "n_records": 37598,
+ "channel_map": {
+  "ch0": "coil0 AIN0-AIN1 differential",
+  "ch1": "coil1 AIN2-AIN3 differential",
+  "ch2": "coil2 AIN4-AIN5 differential"
+ },
+ "drive": {
+  "type": "reverse inverse-amplification (two-tone XOR, phase-flipped)",
+  "sequence": [
+   "x",
+   "O 0 180",
+   "O 1 180",
+   "O 2 180",
+   "TD 100",
+   "T 20",
+   "TM 1",
+   "M 3",
+   "K 0",
+   "L 16"
+  ],
+  "base_hz": 16,
+  "overlay_hz": 20,
+  "mix": "XOR (TM 1)",
+  "stagger": "120-deg (M 3)",
+  "td_pct": 100,
+  "coil_offsets_deg": [
+   180,
+   180,
+   180
+  ],
+  "note": "Reverse = all coil offsets flipped 180\u00b0. Same XOR, same stagger. Tests whether realized phi depends on drive polarity."
+ },
+ "fields": [
+  "t_us (teensy micros)",
+  "seq",
+  "ch[3] = 3 coils' raw signed 24-bit differential counts",
+  "wall_us"
+ ]
+}
