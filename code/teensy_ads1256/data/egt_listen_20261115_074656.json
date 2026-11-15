@@ -1,0 +1,13 @@
+{
+  "file": "egt_listen_20261115_074656.jsonl",
+  "timestamp": "20261115_074656",
+  "duration_s": 120.0,
+  "records": 39832,
+  "zeros": 0,
+  "zero_pct": 0.0,
+  "pga": 64,
+  "sps": 1000,
+  "drive": "NONE \u2014 silent listen, zero power, drive mode 0",
+  "firmware": "ads1256+drive v2 hardened",
+  "post_diag": "{\"diag\":1,\"STATUS\":52,\"chip_id\":3,\"MUX\":35,\"ADCON\":6,\"DRATE\":161,\"DRDY_pin\":0}"
+}

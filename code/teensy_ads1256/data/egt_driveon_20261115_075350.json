@@ -1,0 +1,10 @@
+{
+  "file": "egt_driveon_20261115_075350.jsonl",
+  "timestamp": "20261115_075350",
+  "duration_s": 120.0,
+  "records": 37594,
+  "pga": 64,
+  "sps": 1000,
+  "drive": "two-tone canonical: x, O 0 0, O 1 0, O 2 0, TD 100, T 20, TM 1, M 3, K 0, L 16",
+  "purpose": "phase-offset comparison vs rest-state listen (egt_listen_20261115_074656)"
+}

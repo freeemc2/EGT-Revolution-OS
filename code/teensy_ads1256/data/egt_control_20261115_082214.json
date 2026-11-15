@@ -1,0 +1,46 @@
+{
+ "node": "DE",
+ "instrument": "teensy_ads1256 v2",
+ "port": "COM10",
+ "wall_origin_ns": 1794748962668145900,
+ "perf_origin_ns": 98097688764800,
+ "wall_origin_utc": "2026-11-15T13:22:42Z",
+ "pga": 64,
+ "data_rate_sps": 1000,
+ "vref": 2.5,
+ "lsb_nV": 4.656612873077393,
+ "firmware_header": null,
+ "n_records": 37609,
+ "channel_map": {
+  "ch0": "coil0 AIN0-AIN1 differential",
+  "ch1": "coil1 AIN2-AIN3 differential",
+  "ch2": "coil2 AIN4-AIN5 differential"
+ },
+ "drive": {
+  "type": "single-tone CONTROL (standard-EM, sealed canon #2)",
+  "sequence": [
+   "x",
+   "O 0 0",
+   "O 1 0",
+   "O 2 0",
+   "TD 100",
+   "T 0",
+   "TM 0",
+   "M 3",
+   "K 0",
+   "L 16"
+  ],
+  "base_hz": 16,
+  "overlay_hz": 0,
+  "mix": "none (TM 0, single-tone)",
+  "stagger": "120-deg (M 3)",
+  "td_pct": 100
+ },
+ "fields": [
+  "t_us (teensy micros)",
+  "seq",
+  "ch[3] = 3 coils' raw signed 24-bit differential counts",
+  "wall_us"
+ ],
+ "note": "Single-tone CONTROL: 16 Hz square wave, 120-deg stagger, no XOR. Tests whether the two-tone 60 Hz notch is XOR-specific. 16 Hz odd harmonics are 16, 48, 80, 112, 144 \u2014 none at 60 Hz."
+}
