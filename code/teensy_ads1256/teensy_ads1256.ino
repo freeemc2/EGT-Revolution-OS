@@ -112,6 +112,7 @@ void ads_cmd(uint8_t c){
 }
 
 uint8_t ads_rreg(uint8_t reg){
+  ads_wait_drdy();                       // DRDY must be LOW before RREG (same as WREG)
   SPI.beginTransaction(ADS_SPI); digitalWriteFast(PIN_CS,LOW);
   SPI.transfer(CMD_RREG|reg); SPI.transfer(0x00);
   delayMicroseconds(10);                 // t6 before data
@@ -135,56 +136,70 @@ void ads_diag(){
 
 void ads_reset(){
   digitalWriteFast(PIN_RST,LOW); delayMicroseconds(10);
-  digitalWriteFast(PIN_RST,HIGH); delay(5);
+  digitalWriteFast(PIN_RST,HIGH); delay(30);
+  // flush: clock out 10 dummy bytes with CS HIGH to clear any half-shifted SPI state
+  SPI.beginTransaction(ADS_SPI);
+  for(int i=0; i<10; i++) SPI.transfer(0xFF);
+  SPI.endTransaction();
+  delay(5);
   ads_wait_drdy();
 }
 
 void ads_init(){
-  ads_reset();
+  // strategy: check if chip is already alive before resetting (reset can knock a flaky bus offline)
+  ads_cmd(CMD_SDATAC);
   delay(10);
-  ads_cmd(CMD_SDATAC);                 // stop continuous so we can WREG
-  delayMicroseconds(200);              // let the chip settle before the first WREG
-  ads_wreg(REG_STATUS, 0x04);          // MSB first, auto-cal ON, analog buffer off
-  delayMicroseconds(100);
-  ads_wreg(REG_MUX,    MUX_COIL[0]);
-  delayMicroseconds(100);
-  ads_wreg(REG_DRATE,  drate_code(sps));
-  delayMicroseconds(100);
-  ads_cmd(CMD_SELFCAL);                 // calibrate FIRST ...
-  ads_wait_drdy(500000);
-  delay(20);                            // let the chip reach steady state (SELFCAL-adjacent writes get dropped)
-  // ... THEN set PGA in steady state, retry until it reads back (it sticks once settled)
-  for(int tries=0; tries<6; tries++){
-    ads_wreg(REG_ADCON, pga_code(pga));
-    delayMicroseconds(200);
-    if(ads_rreg(REG_ADCON)==pga_code(pga)) break;
-    delay(5);
+  bool alive = ((ads_rreg(REG_STATUS)>>4)==3);
+
+  if(!alive){
+    // chip not responding — try resets until it answers
+    for(int pass=0; pass<10; pass++){
+      ads_reset();
+      delay(50);
+      ads_cmd(CMD_SDATAC);
+      delay(10);
+      if((ads_rreg(REG_STATUS)>>4)==3){ alive=true; break; }
+      delay(100);
+    }
   }
+  if(!alive) return;    // bail — host can retry with 'I'
+
+  // bulk WREG: write STATUS(0x00), MUX(0x01), ADCON(0x02), DRATE(0x03) in ONE SPI transaction
+  delay(10);
+  for(int tries=0; tries<5; tries++){
+    ads_wait_drdy();
+    SPI.beginTransaction(ADS_SPI); digitalWriteFast(PIN_CS,LOW);
+    SPI.transfer(CMD_WREG | 0x00);       // start at register 0
+    SPI.transfer(0x03);                   // write 4 registers (n-1=3)
+    SPI.transfer(0x04);                   // STATUS: MSB first, auto-cal ON
+    SPI.transfer(MUX_COIL[0]);            // MUX: AIN0-AIN1
+    SPI.transfer(pga_code(pga));          // ADCON: PGA (CLK bits = 00 = no CLKOUT)
+    SPI.transfer(drate_code(sps));        // DRATE
+    digitalWriteFast(PIN_CS,HIGH); SPI.endTransaction();
+    delay(20);
+    // verify: check ADCON (the stubborn one)
+    uint8_t ad = ads_rreg(REG_ADCON);
+    uint8_t dr = ads_rreg(REG_DRATE);
+    if(ad==pga_code(pga) && dr==drate_code(sps)) break;
+    delay(20);
+  }
+  ads_cmd(CMD_SELFCAL);
+  ads_wait_drdy(500000);
 }
 
-// settle count after a mux switch: discard this many conversions so the sinc filter
-// fully re-settles on the new channel before we read (kills mux-switch transients).
-int ads_settle = 3;
-
-// read one settled differential sample on coil index ci (changes MUX, SYNC/WAKEUP, settles, reads)
+// read one settled differential sample on coil index ci (changes MUX, SYNC/WAKEUP, waits DRDY)
 int32_t ads_read_coil(int ci){
-  // direct MUX write (no DRDY-wait inside the hot path) + SYNC/WAKEUP to restart the filter
-  SPI.beginTransaction(ADS_SPI); digitalWriteFast(PIN_CS,LOW);
-  SPI.transfer(CMD_WREG|REG_MUX); SPI.transfer(0x00); SPI.transfer(MUX_COIL[ci]);
-  digitalWriteFast(PIN_CS,HIGH); SPI.endTransaction();
-  delayMicroseconds(5);
-  ads_cmd(CMD_SYNC); ads_cmd(CMD_WAKEUP);
-  // discard ads_settle conversions (wait DRDY high->low each), read the next settled one
-  for(int k=0;k<ads_settle;k++){
-    elapsedMicros t; while(digitalReadFast(PIN_DRDY)==LOW){ if(t>5000) break; }  // wait high
-    t=0;             while(digitalReadFast(PIN_DRDY)==HIGH){ if(t>20000) break; } // wait low
-  }
+  ads_wait_drdy();
+  ads_wreg(REG_MUX, MUX_COIL[ci]);
+  ads_cmd(CMD_SYNC);
+  ads_cmd(CMD_WAKEUP);
+  ads_wait_drdy();                     // settled conversion ready
   SPI.beginTransaction(ADS_SPI); digitalWriteFast(PIN_CS,LOW);
   SPI.transfer(CMD_RDATA);
-  delayMicroseconds(7);
+  delayMicroseconds(7);                // t6 ~ 50 tCLKIN before data
   uint32_t v = ((uint32_t)SPI.transfer(0)<<16)|((uint32_t)SPI.transfer(0)<<8)|SPI.transfer(0);
   digitalWriteFast(PIN_CS,HIGH); SPI.endTransaction();
-  if(v & 0x800000) v |= 0xFF000000;
+  if(v & 0x800000) v |= 0xFF000000;    // sign-extend 24->32
   return (int32_t)v;
 }
 
@@ -319,6 +334,54 @@ void handle_line(char*line){
       Serial.print(",\"samples_high\":"); Serial.print(hi); Serial.println("}");
       break; }
     case 'Z': ads_cmd(CMD_SELFCAL); ads_wait_drdy(500000); Serial.println("R SELFCAL"); break;
+    case 'B': {  // bit-bang SPI test: read STATUS register via GPIO, bypass LPSPI4 entirely
+      SPI.end();  // release hardware SPI pins
+      pinMode(PIN_SCLK, OUTPUT); digitalWriteFast(PIN_SCLK, LOW);  // SPI MODE 1: idle LOW
+      pinMode(PIN_DIN, OUTPUT);  digitalWriteFast(PIN_DIN, LOW);
+      pinMode(PIN_DOUT, INPUT);
+      pinMode(PIN_CS, OUTPUT);   digitalWriteFast(PIN_CS, HIGH);
+      delay(1);
+      // wait for DRDY LOW
+      elapsedMicros tw; while(digitalReadFast(PIN_DRDY) && tw<200000);
+      // send SDATAC (0x0F) first
+      digitalWriteFast(PIN_CS, LOW); delayMicroseconds(5);
+      for(int bit=7; bit>=0; bit--){
+        digitalWriteFast(PIN_DIN, (0x0F>>bit)&1);
+        delayMicroseconds(2);
+        digitalWriteFast(PIN_SCLK, HIGH); delayMicroseconds(5);
+        digitalWriteFast(PIN_SCLK, LOW);  delayMicroseconds(5);
+      }
+      digitalWriteFast(PIN_CS, HIGH); delayMicroseconds(50);
+      // wait DRDY again
+      tw=0; while(digitalReadFast(PIN_DRDY) && tw<200000);
+      // RREG STATUS: send 0x10, 0x00, then read 1 byte
+      digitalWriteFast(PIN_CS, LOW); delayMicroseconds(5);
+      uint8_t txbytes[2] = {0x10, 0x00};
+      for(int b=0; b<2; b++){
+        for(int bit=7; bit>=0; bit--){
+          digitalWriteFast(PIN_DIN, (txbytes[b]>>bit)&1);
+          delayMicroseconds(2);
+          digitalWriteFast(PIN_SCLK, HIGH); delayMicroseconds(5);
+          digitalWriteFast(PIN_SCLK, LOW);  delayMicroseconds(5);
+        }
+      }
+      delayMicroseconds(20);   // t6
+      uint8_t rx=0;
+      for(int bit=7; bit>=0; bit--){
+        digitalWriteFast(PIN_SCLK, HIGH); delayMicroseconds(5);
+        if(digitalReadFast(PIN_DOUT)) rx |= (1<<bit);
+        digitalWriteFast(PIN_SCLK, LOW);  delayMicroseconds(5);
+      }
+      digitalWriteFast(PIN_CS, HIGH);
+      Serial.print("{\"bitbang\":1,\"STATUS\":"); Serial.print(rx);
+      Serial.print(",\"chip_id\":"); Serial.print(rx>>4);
+      Serial.print(",\"DOUT_now\":"); Serial.print(digitalReadFast(PIN_DOUT));
+      Serial.print(",\"DRDY_now\":"); Serial.print(digitalReadFast(PIN_DRDY));
+      Serial.println("}");
+      // restore hardware SPI
+      SPI.begin();
+      pinMode(PIN_CS, OUTPUT); digitalWriteFast(PIN_CS, HIGH);
+      break; }
     case 'L':{ float f=atof(line+1); if(f>0&&f<=30000){ setBaseFreq(f); driveStart();
       Serial.print("R LOCK "); Serial.println(f); emit_header(); } else Serial.println("{\"err\":\"L freq\"}"); break; }
     case 'M': applyMode(atoi(line+1)); Serial.print("R MODE "); Serial.println(driveMode); break;
@@ -346,7 +409,7 @@ void setup(){
   for(int k=0;k<N_COILS;k++){ pinMode(DRIVE_PINS[k],OUTPUT); digitalWriteFast(DRIVE_PINS[k],LOW); }
   SPI.begin();
   Serial.begin(115200);
-  delay(50);
+  delay(2000);
   ads_init();
   emit_header();
 }

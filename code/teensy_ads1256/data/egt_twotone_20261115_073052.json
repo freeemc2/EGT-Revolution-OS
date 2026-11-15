@@ -1,0 +1,13 @@
+{
+  "file": "egt_twotone_20261115_073052.jsonl",
+  "timestamp": "20261115_073052",
+  "duration_s": 120.0,
+  "records": 37640,
+  "zeros": 0,
+  "zero_pct": 0.0,
+  "pga": 64,
+  "sps": 1000,
+  "drive": "two-tone canonical: x, O 0 0, O 1 0, O 2 0, TD 100, T 20, TM 1, M 3, K 0, L 16",
+  "firmware": "ads1256+drive v2 hardened (DRDY-gated reads, gentle init, bulk WREG)",
+  "post_diag": "{\"diag\":1,\"STATUS\":52,\"chip_id\":3,\"MUX\":69,\"ADCON\":6,\"DRATE\":161,\"DRDY_pin\":0}"
+}
