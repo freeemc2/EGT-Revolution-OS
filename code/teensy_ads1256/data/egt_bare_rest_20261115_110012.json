@@ -1,0 +1,35 @@
+{
+ "node": "DE",
+ "instrument": "teensy_ads1256 v2",
+ "port": "COM10",
+ "session": "20261115_105949",
+ "run_index": 0,
+ "run_tag": "bare_rest",
+ "run_label": "REST \u2014 bare sense wires only (no coils, no resistors)",
+ "config": "bare_sense_wires_only",
+ "dummy_channel": null,
+ "wall_origin_ns": 1794758415265965400,
+ "perf_origin_ns": 107550185081300,
+ "wall_origin_utc": "2026-11-15T16:00:15Z",
+ "pga": 64,
+ "data_rate_sps": 1000,
+ "vref": 2.5,
+ "lsb_nV": 4.656612873077393,
+ "firmware_header": null,
+ "n_records": 39759,
+ "channel_map": {
+  "ch0": "coil0 AIN0-AIN1 differential (DUMMY RESISTOR if swapped here)",
+  "ch1": "coil1 AIN2-AIN3 differential",
+  "ch2": "coil2 AIN4-AIN5 differential"
+ },
+ "drive": {
+  "type": "none (rest baseline, bare sense wires only)"
+ },
+ "fields": [
+  "t_us (teensy micros)",
+  "seq",
+  "ch[3] = 3 coils' raw signed 24-bit differential counts",
+  "wall_us"
+ ],
+ "note": "ALL channels bare sense wires only \u2014 no coils, no 220 ohm resistors. Test: does pulldown exist with zero load on drive outputs?"
+}
